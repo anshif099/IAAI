@@ -18,11 +18,21 @@ const Login = () => {
         setIsLoading(true);
 
         // Simulate login API call
+
         setTimeout(() => {
             setIsLoading(false);
-            console.log("Login attempt with:", { email, password });
-            toast.success("Logged in successfully!");
-            navigate("/");
+            if (email === "iaai@gmail.com" && password === "iaai@123") {
+                console.log("Super Admin Login Successful");
+                toast.success("Logged in successfully as Super Admin!");
+                navigate("/super-admin");
+            } else {
+                // For now, keeping the simulation for other users or just fail it? 
+                // The request implies specifically setting these credentials. 
+                // I'll make it fail for anything else to be safe/clear, or just log it.
+                // Let's assume ONLY this user can login for now based on "password hardcoded on code".
+                console.log("Login failed");
+                toast.error("Invalid credentials");
+            }
         }, 1500);
     };
 
