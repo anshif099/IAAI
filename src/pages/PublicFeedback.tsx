@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,13 +13,60 @@ const PublicFeedback = () => {
     const [hoverRating, setHoverRating] = useState(0);
     const [feedback, setFeedback] = useState("");
     const [submitted, setSubmitted] = useState(false);
+    const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+    const [previews, setPreviews] = useState<string[]>([]);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Removed useEffect for auto-redirect
 
-    const handleSubmit = () => {
+    // Clean up object URLs on unmount
+    useEffect(() => {
+        return () => {
+            previews.forEach(url => URL.revokeObjectURL(url));
+        };
+    }, [previews]);
+
+    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files) {
+            const files = Array.from(e.target.files);
+            setSelectedFiles(prev => [...prev, ...files]);
+
+            const newPreviews = files.map(file => URL.createObjectURL(file));
+            setPreviews(prev => [...prev, ...newPreviews]);
+        }
+    };
+
+    const removeFile = (index: number) => {
+        URL.revokeObjectURL(previews[index]);
+        setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+        setPreviews(prev => prev.filter((_, i) => i !== index));
+    };
+
+    const convertToBase64 = (file: File): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = error => reject(error);
+        });
+    };
+
+    const handleSubmit = async () => {
         if (rating === 0) {
             toast.error("Please select a rating");
             return;
+        }
+
+        // Convert images to Base64 for internal storage
+        let imagesBase64: string[] = [];
+        if (selectedFiles.length > 0) {
+            try {
+                imagesBase64 = await Promise.all(selectedFiles.map(convertToBase64));
+            } catch (error) {
+                console.error("Error converting images", error);
+                toast.error("Failed to process images");
+                return;
+            }
         }
 
         // Always save to localStorage
@@ -27,6 +74,7 @@ const PublicFeedback = () => {
             id: Date.now(),
             rating,
             comment: feedback,
+            images: imagesBase64,
             date: new Date().toISOString(),
             targetUrl
         };
@@ -37,16 +85,23 @@ const PublicFeedback = () => {
         setSubmitted(true);
 
         if (rating >= 4 && targetUrl) {
-            toast.success("Thank you! Redirecting to Google to post your review...");
+            toast.success("Redirecting to Google...");
+
+            if (selectedFiles.length > 0) {
+                toast.info("Note: Please re-select your photos on Google Review page.", {
+                    duration: 4000,
+                });
+            }
+
             // Copy feedback to clipboard to help user
             navigator.clipboard.writeText(feedback).then(() => {
                 toast.info("Review text copied to clipboard!");
             }).catch(() => { });
 
-            // Slight delay to allow reading the toast
+            // Delay to allow reading the toast
             setTimeout(() => {
                 window.location.href = targetUrl;
-            }, 2000);
+            }, 2500);
         } else {
             toast.success("Thank you for your feedback!");
         }
@@ -55,6 +110,8 @@ const PublicFeedback = () => {
     const handleCancel = () => {
         setRating(0);
         setFeedback("");
+        setSelectedFiles([]);
+        setPreviews([]);
         toast.info("Feedback cleared");
     };
 
@@ -137,10 +194,39 @@ const PublicFeedback = () => {
                         value={feedback}
                         onChange={(e) => setFeedback(e.target.value)}
                     />
+                    {/* Image Previews */}
+                    {previews.length > 0 && (
+                        <div className="flex gap-2 mt-4 overflow-x-auto pb-2">
+                            {previews.map((src, index) => (
+                                <div key={index} className="relative flex-shrink-0">
+                                    <img src={src} alt="Preview" className="w-20 h-20 object-cover rounded-md border" />
+                                    <button
+                                        onClick={() => removeFile(index)}
+                                        className="absolute -top-2 -right-2 bg-white rounded-full p-0.5 shadow-md hover:bg-gray-100"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-gray-600">
+                                            <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
 
-                {/* Add Photos Button (Visual Only) */}
-                <button className="flex items-center justify-center gap-2 w-full py-2.5 border border-[#dadce0] rounded-[4px] text-[#1a73e8] hover:bg-[#f1f3f4] transition-colors font-medium">
+                {/* Add Photos Button */}
+                <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileSelect}
+                    multiple
+                    accept="image/*,video/*"
+                    className="hidden"
+                />
+                <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex items-center justify-center gap-2 w-full py-2.5 border border-[#dadce0] rounded-[4px] text-[#1a73e8] hover:bg-[#f1f3f4] transition-colors font-medium"
+                >
                     <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current">
                         <path d="M19 7v2.99s-1.99.01-2 0V7h-3s.01-1.99 0-2h3V2h2v3h3v2h-3zm-3 4V8h-3V5H5c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-8h-3zM5 19l3-4 2 3 3-4 4 5H5z"></path>
                     </svg>
@@ -159,8 +245,8 @@ const PublicFeedback = () => {
                         onClick={handleSubmit}
                         disabled={rating === 0}
                         className={`px-8 py-2 rounded-[4px] font-medium transition-colors ${rating === 0
-                                ? "bg-[#e5e5e5] text-[#a8a8a8] cursor-not-allowed"
-                                : "bg-[#1a73e8] text-white hover:bg-[#1557b0] shadow-sm"
+                            ? "bg-[#e5e5e5] text-[#a8a8a8] cursor-not-allowed"
+                            : "bg-[#1a73e8] text-white hover:bg-[#1557b0] shadow-sm"
                             }`}
                     >
                         Post

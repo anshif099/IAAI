@@ -276,6 +276,19 @@ const SuperAdminDashboard = () => {
                                         </CardHeader>
                                         <CardContent>
                                             <p className="whitespace-pre-wrap">{item.comment}</p>
+                                            {item.images && item.images.length > 0 && (
+                                                <div className="flex gap-2 mt-4 overflow-x-auto pb-2">
+                                                    {item.images.map((img: string, i: number) => (
+                                                        <img
+                                                            key={i}
+                                                            src={img}
+                                                            alt={`Attachment ${i + 1}`}
+                                                            className="w-24 h-24 object-cover rounded-md border cursor-pointer hover:opacity-90 transition-opacity"
+                                                            onClick={() => window.open(img, "_blank")}
+                                                        />
+                                                    ))}
+                                                </div>
+                                            )}
                                         </CardContent>
                                     </Card>
                                 ))}
