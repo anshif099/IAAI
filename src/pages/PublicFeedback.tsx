@@ -52,77 +52,122 @@ const PublicFeedback = () => {
         }
     };
 
+    const handleCancel = () => {
+        setRating(0);
+        setFeedback("");
+        toast.info("Feedback cleared");
+    };
+
     if (submitted) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-background p-4">
-                <Card className="max-w-md w-full text-center">
-                    <CardHeader>
-                        <div className="mx-auto w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-4">
-                            <Star className="w-6 h-6 text-green-600 fill-green-600" />
-                        </div>
-                        <CardTitle>Thank You!</CardTitle>
-                        <CardDescription>
-                            {rating >= 4
-                                ? "Redirecting you to Google Reviews..."
-                                : "We appreciate your feedback and will use it to improve our services."}
-                        </CardDescription>
-                    </CardHeader>
-                </Card>
+            <div className="min-h-screen flex items-center justify-center bg-white p-4 font-sans">
+                <div className="max-w-[500px] w-full text-center space-y-4">
+                    <div className="mx-auto w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mb-4">
+                        <svg viewBox="0 0 24 24" className="w-8 h-8 text-blue-600 fill-current">
+                            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"></path>
+                        </svg>
+                    </div>
+                    <h2 className="text-2xl font-normal text-gray-800">Thanks for sharing!</h2>
+                    <p className="text-gray-600">
+                        {rating >= 4
+                            ? "Redirecting you to Google Reviews..."
+                            : "Your feedback helps us improve."}
+                    </p>
+                </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-background p-4">
-            <Card className="max-w-md w-full">
-                <CardHeader className="text-center">
-                    <CardTitle>How was your experience?</CardTitle>
-                    <CardDescription>
-                        Please rate your experience with us.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                    <div className="flex justify-center gap-2">
+        <div className="min-h-screen flex flex-col items-center bg-white font-sans sm:pt-10">
+            <div className="w-full max-w-[700px] p-4 sm:p-6 space-y-6">
+
+                {/* Header */}
+                <div className="text-center space-y-1">
+                    <h1 className="text-[1.375rem] leading-[1.75rem] font-normal text-[#202124]">Rainhopes</h1>
+                </div>
+
+                {/* User Info */}
+                <div className="flex flex-col items-start space-y-1">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-[#7B1FA2] text-white flex items-center justify-center text-lg font-normal">
+                            W
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="text-[1rem] font-medium text-[#3c4043]">Google User</span>
+                            <span className="text-[0.75rem] text-[#70757a] flex items-center gap-1">
+                                Posting publicly across Google
+                                <svg focusable="false" viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-[#70757a]"><path d="M11 7h2v2h-2zm0 4h2v6h-2zm1-9C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"></path></svg>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Star Rating */}
+                <div className="flex justify-center py-2">
+                    <div className="flex gap-2">
                         {[1, 2, 3, 4, 5].map((star) => (
                             <button
                                 key={star}
                                 type="button"
-                                className="focus:outline-none transition-transform hover:scale-110"
+                                className="focus:outline-none transition-transform active:scale-95"
                                 onMouseEnter={() => setHoverRating(star)}
                                 onMouseLeave={() => setHoverRating(0)}
                                 onClick={() => setRating(star)}
                             >
-                                <Star
-                                    className={`w-10 h-10 ${star <= (hoverRating || rating)
-                                        ? "fill-yellow-400 text-yellow-400"
-                                        : "text-gray-300"
-                                        }`}
-                                />
+                                {star <= (hoverRating || rating) ? (
+                                    <svg viewBox="0 0 24 24" className="w-10 h-10 sm:w-12 sm:h-12 fill-[#FAAF00]">
+                                        <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"></path>
+                                    </svg>
+                                ) : (
+                                    <svg viewBox="0 0 24 24" className="w-10 h-10 sm:w-12 sm:h-12 fill-none stroke-[#dadce0] stroke-[2]">
+                                        <path d="M22 9.24l-7.19-.62L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.63-7.03L22 9.24zM12 15.4l-3.76 2.27 1-4.28-3.32-2.88 4.38-.38L12 6.1l1.71 4.04 4.38.38-3.32 2.88 1 4.28L12 15.4z"></path>
+                                    </svg>
+                                )}
                             </button>
                         ))}
                     </div>
+                </div>
 
-                    <div className="text-center text-sm font-medium text-muted-foreground min-h-[20px]">
-                        {rating > 0 && (
-                            rating >= 4 ? "Excellent! Please write your review below." : "Tell us how we can improve."
-                        )}
-                    </div>
+                {/* Input Area */}
+                <div className="border border-[#dadce0] rounded-lg p-4 min-h-[150px]">
+                    <textarea
+                        className="w-full h-full min-h-[100px] outline-none text-[1rem] text-[#202124] placeholder:text-[#5f6368] resize-none"
+                        placeholder="Share details of your own experience at this place"
+                        value={feedback}
+                        onChange={(e) => setFeedback(e.target.value)}
+                    />
+                </div>
 
-                    {rating > 0 && (
-                        <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4">
-                            <Textarea
-                                placeholder={rating >= 4 ? "Share your experience..." : "What went wrong? Please share details..."}
-                                value={feedback}
-                                onChange={(e) => setFeedback(e.target.value)}
-                                className="min-h-[100px]"
-                            />
-                            <Button onClick={handleSubmit} className="w-full">
-                                {rating >= 4 ? "Submit & Post on Google" : "Submit Feedback"}
-                            </Button>
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
+                {/* Add Photos Button (Visual Only) */}
+                <button className="flex items-center justify-center gap-2 w-full py-2.5 border border-[#dadce0] rounded-[4px] text-[#1a73e8] hover:bg-[#f1f3f4] transition-colors font-medium">
+                    <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current">
+                        <path d="M19 7v2.99s-1.99.01-2 0V7h-3s.01-1.99 0-2h3V2h2v3h3v2h-3zm-3 4V8h-3V5H5c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-8h-3zM5 19l3-4 2 3 3-4 4 5H5z"></path>
+                    </svg>
+                    Add photos & videos
+                </button>
+
+                {/* Action Buttons */}
+                <div className="flex justify-end gap-2 pt-2">
+                    <button
+                        onClick={handleCancel}
+                        className="px-6 py-2 rounded-[4px] text-[#1a73e8] font-medium hover:bg-[#f8f9fa] transition-colors"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        onClick={handleSubmit}
+                        disabled={rating === 0}
+                        className={`px-8 py-2 rounded-[4px] font-medium transition-colors ${rating === 0
+                                ? "bg-[#e5e5e5] text-[#a8a8a8] cursor-not-allowed"
+                                : "bg-[#1a73e8] text-white hover:bg-[#1557b0] shadow-sm"
+                            }`}
+                    >
+                        Post
+                    </button>
+                </div>
+
+            </div>
         </div>
     );
 };
