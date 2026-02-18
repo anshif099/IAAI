@@ -73,9 +73,17 @@ const PublicFeedback = () => {
         });
     };
 
+    const [email, setEmail] = useState("");
+
     const handleSubmit = async () => {
         if (rating === 0) {
             toast.error("Please select a rating");
+            return;
+        }
+
+        // Require email for low ratings (3 stars or less)
+        if (rating <= 3 && !email) {
+            toast.error("Please provide your email address so we can contact you.");
             return;
         }
 
@@ -98,6 +106,7 @@ const PublicFeedback = () => {
             id: Date.now(),
             rating,
             comment: feedback,
+            email: email, // Save email
             images: imagesBase64,
             date: new Date().toISOString(),
             targetUrl: effectiveTargetUrl,
@@ -107,8 +116,8 @@ const PublicFeedback = () => {
         const existingFeedback = JSON.parse(localStorage.getItem("internal_feedback") || "[]");
         localStorage.setItem("internal_feedback", JSON.stringify([newFeedback, ...existingFeedback]));
 
-        // Save to Firebase Realtime Database
-        if (rating < 4) {
+        // Save to Firebase for 3 stars or below
+        if (rating <= 3) {
             try {
                 const feedbackRef = ref(db, 'feedback');
                 await push(feedbackRef, newFeedback);
@@ -120,7 +129,7 @@ const PublicFeedback = () => {
 
         setSubmitted(true);
 
-        if (rating >= 4 && effectiveTargetUrl) {
+        if (rating >= 2 && effectiveTargetUrl) {
             toast.success("Redirecting to Google...");
 
             if (selectedFiles.length > 0) {
@@ -177,7 +186,7 @@ const PublicFeedback = () => {
                     </div>
                     <h2 className="text-2xl font-normal text-gray-800">Thanks for sharing!</h2>
                     <p className="text-gray-600">
-                        {rating >= 4
+                        {rating >= 2
                             ? "Redirecting you to Google Reviews..."
                             : "Your feedback helps us improve."}
                     </p>
@@ -238,6 +247,20 @@ const PublicFeedback = () => {
                         ))}
                     </div>
                 </div>
+
+                {/* Email Input (Visible for low ratings) */}
+                {rating > 0 && rating <= 3 && (
+                    <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                        <input
+                            type="email"
+                            placeholder="Your email address (Required)"
+                            className="w-full p-3 border border-[#dadce0] rounded-lg outline-none focus:border-[#1a73e8] transition-colors"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            required
+                        />
+                    </div>
+                )}
 
                 {/* Input Area */}
                 <div className="border border-[#dadce0] rounded-lg p-4 min-h-[150px]">

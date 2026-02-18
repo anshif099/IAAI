@@ -286,7 +286,12 @@ const SuperAdminDashboard = () => {
                                             </div>
                                             <CardDescription>
                                                 {item.clientSlug && <span className="font-semibold text-primary mr-2">{item.clientSlug}</span>}
-                                                <span className="text-xs">Target: {item.targetUrl}</span>
+                                                <span className="text-xs block sm:inline">Target: {item.targetUrl}</span>
+                                                {item.email && (
+                                                    <div className="text-sm font-medium text-blue-600 mt-1">
+                                                        From: {item.email}
+                                                    </div>
+                                                )}
                                             </CardDescription>
                                         </CardHeader>
                                         <CardContent>
