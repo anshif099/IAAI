@@ -6,6 +6,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Star } from "lucide-react";
 import { toast } from "sonner";
 import { clients, Client } from "@/data/clients";
+import { db } from "@/lib/firebase";
+import { ref, push } from "firebase/database";
 
 const PublicFeedback = () => {
     const [searchParams] = useSearchParams();
@@ -104,6 +106,17 @@ const PublicFeedback = () => {
 
         const existingFeedback = JSON.parse(localStorage.getItem("internal_feedback") || "[]");
         localStorage.setItem("internal_feedback", JSON.stringify([newFeedback, ...existingFeedback]));
+
+        // Save to Firebase Realtime Database
+        if (rating < 4) {
+            try {
+                const feedbackRef = ref(db, 'feedback');
+                await push(feedbackRef, newFeedback);
+            } catch (error) {
+                console.error("Error saving to Firebase:", error);
+                toast.error("Failed to save feedback online, but saved locally.");
+            }
+        }
 
         setSubmitted(true);
 

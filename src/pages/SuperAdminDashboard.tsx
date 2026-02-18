@@ -9,6 +9,8 @@ import jsPDF from "jspdf";
 import { toast } from "sonner";
 import { Download } from "lucide-react";
 import SuperAdminSidebar from "@/components/SuperAdminSidebar";
+import { db } from "@/lib/firebase";
+import { ref, onValue } from "firebase/database";
 
 const SuperAdminDashboard = () => {
     const [activeTab, setActiveTab] = useState<"qr" | "feedback">("qr");
@@ -21,8 +23,18 @@ const SuperAdminDashboard = () => {
     const [feedbackList, setFeedbackList] = useState<any[]>([]);
 
     useEffect(() => {
-        const storedFeedback = JSON.parse(localStorage.getItem("internal_feedback") || "[]");
-        setFeedbackList(storedFeedback);
+        const feedbackRef = ref(db, 'feedback');
+        const unsubscribe = onValue(feedbackRef, (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                const feedbackArray = Object.values(data).reverse(); // specific to your needs, sorting by newest
+                setFeedbackList(feedbackArray);
+            } else {
+                setFeedbackList([]);
+            }
+        });
+
+        return () => unsubscribe();
     }, [activeTab]);
 
     const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -272,7 +284,10 @@ const SuperAdminDashboard = () => {
                                                     {new Date(item.date).toLocaleDateString()}
                                                 </span>
                                             </div>
-                                            <CardDescription>Target: {item.targetUrl}</CardDescription>
+                                            <CardDescription>
+                                                {item.clientSlug && <span className="font-semibold text-primary mr-2">{item.clientSlug}</span>}
+                                                <span className="text-xs">Target: {item.targetUrl}</span>
+                                            </CardDescription>
                                         </CardHeader>
                                         <CardContent>
                                             <p className="whitespace-pre-wrap">{item.comment}</p>
