@@ -1,14 +1,23 @@
 import { useState, useEffect, useRef } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Star } from "lucide-react";
 import { toast } from "sonner";
+import { clients, Client } from "@/data/clients";
 
 const PublicFeedback = () => {
     const [searchParams] = useSearchParams();
-    const targetUrl = searchParams.get("target");
+    const { slug } = useParams<{ slug: string }>();
+    const navigate = useNavigate();
+
+    const [client, setClient] = useState<Client | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    // Legacy target URL support
+    const targetUrlParam = searchParams.get("target");
+
     const [rating, setRating] = useState(0);
     const [hoverRating, setHoverRating] = useState(0);
     const [feedback, setFeedback] = useState("");
@@ -17,7 +26,18 @@ const PublicFeedback = () => {
     const [previews, setPreviews] = useState<string[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    // Removed useEffect for auto-redirect
+    useEffect(() => {
+        if (slug) {
+            const foundClient = clients.find(c => c.slug === slug);
+            if (foundClient) {
+                setClient(foundClient);
+            } else {
+                toast.error("Client not found");
+                // Optional: navigate to 404
+            }
+        }
+        setLoading(false);
+    }, [slug]);
 
     // Clean up object URLs on unmount
     useEffect(() => {
@@ -69,6 +89,8 @@ const PublicFeedback = () => {
             }
         }
 
+        const effectiveTargetUrl = client?.googleReviewUrl || targetUrlParam;
+
         // Always save to localStorage
         const newFeedback = {
             id: Date.now(),
@@ -76,7 +98,8 @@ const PublicFeedback = () => {
             comment: feedback,
             images: imagesBase64,
             date: new Date().toISOString(),
-            targetUrl
+            targetUrl: effectiveTargetUrl,
+            clientSlug: slug // Track which client this was for
         };
 
         const existingFeedback = JSON.parse(localStorage.getItem("internal_feedback") || "[]");
@@ -84,7 +107,7 @@ const PublicFeedback = () => {
 
         setSubmitted(true);
 
-        if (rating >= 4 && targetUrl) {
+        if (rating >= 4 && effectiveTargetUrl) {
             toast.success("Redirecting to Google...");
 
             if (selectedFiles.length > 0) {
@@ -100,7 +123,7 @@ const PublicFeedback = () => {
 
             // Delay to allow reading the toast
             setTimeout(() => {
-                window.location.href = targetUrl;
+                window.location.href = effectiveTargetUrl;
             }, 2500);
         } else {
             toast.success("Thank you for your feedback!");
@@ -114,6 +137,21 @@ const PublicFeedback = () => {
         setPreviews([]);
         toast.info("Feedback cleared");
     };
+
+    if (loading) {
+        return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+    }
+
+    if (slug && !client) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-white p-4 font-sans">
+                <div className="max-w-[500px] w-full text-center space-y-4">
+                    <h2 className="text-2xl font-normal text-gray-800">Client Not Found</h2>
+                    <p className="text-gray-600">The requested client could not be found.</p>
+                </div>
+            </div>
+        );
+    }
 
     if (submitted) {
         return (
@@ -141,7 +179,9 @@ const PublicFeedback = () => {
 
                 {/* Header */}
                 <div className="text-center space-y-1">
-                    <h1 className="text-[1.375rem] leading-[1.75rem] font-normal text-[#202124]">Rainhopes</h1>
+                    <h1 className="text-[1.375rem] leading-[1.75rem] font-normal text-[#202124]">
+                        {client ? client.name : "Rainhopes"}
+                    </h1>
                 </div>
 
                 {/* User Info */}

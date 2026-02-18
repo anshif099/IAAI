@@ -22,6 +22,7 @@ const App = () => (
           <Route path="/login" element={<Login />} />
           <Route path="/super-admin" element={<SuperAdminDashboard />} />
           <Route path="/feedback" element={<PublicFeedback />} />
+          <Route path="/review/:slug" element={<PublicFeedback />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
