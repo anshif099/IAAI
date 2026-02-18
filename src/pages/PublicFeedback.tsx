@@ -144,13 +144,21 @@ const PublicFeedback = () => {
 
         // Save to Firebase for 3 stars or below
         if (rating <= 3) {
+            const feedbackRef = ref(db, 'feedback');
+            console.log("Attempting to push feedback to Firebase:", newFeedback); // Debug log
+
             try {
-                const feedbackRef = ref(db, 'feedback');
                 await push(feedbackRef, newFeedback);
-                console.log("Feedback pushed to Firebase");
-            } catch (error) {
-                console.error("Error saving to Firebase:", error);
-                toast.error("Failed to save feedback online. Please check your connection.");
+                console.log("Feedback successfully pushed to Firebase!"); // Debug log
+                toast.success("Feedback saved to database."); // Explicit success message
+            } catch (error: any) {
+                console.error("CRITICAL FIREBASE ERROR:", error);
+                const errorMessage = error.message || "Unknown database error";
+                // Show the actual error to the user for debugging
+                toast.error(`Database Error: ${errorMessage}. Please check console.`);
+                if (error.code === 'PERMISSION_DENIED') {
+                    toast.error("Permission Denied: Check Firebase Rules.");
+                }
             }
         }
 
