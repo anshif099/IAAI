@@ -7,10 +7,10 @@ import { QRCodeSVG } from "qrcode.react";
 import { toPng, toSvg } from "html-to-image";
 import jsPDF from "jspdf";
 import { toast } from "sonner";
-import { Download } from "lucide-react";
+import { Download, Trash2 } from "lucide-react";
 import SuperAdminSidebar from "@/components/SuperAdminSidebar";
 import { db } from "@/lib/firebase";
-import { ref, onValue } from "firebase/database";
+import { ref, onValue, remove } from "firebase/database";
 
 const SuperAdminDashboard = () => {
     const [activeTab, setActiveTab] = useState<"qr" | "feedback">("qr");
@@ -27,7 +27,11 @@ const SuperAdminDashboard = () => {
         const unsubscribe = onValue(feedbackRef, (snapshot) => {
             const data = snapshot.val();
             if (data) {
-                const feedbackArray = Object.values(data).reverse(); // specific to your needs, sorting by newest
+                // Map entries to include the Firebase key
+                const feedbackArray = Object.entries(data).map(([key, value]) => ({
+                    ...(value as any),
+                    firebaseKey: key
+                })).reverse();
                 setFeedbackList(feedbackArray);
             } else {
                 setFeedbackList([]);
@@ -79,6 +83,19 @@ const SuperAdminDashboard = () => {
         } catch (err) {
             console.error("Download failed", err);
             toast.error("Failed to download QR code");
+        }
+    };
+
+    const handleDelete = async (firebaseKey: string) => {
+        if (window.confirm("Are you sure you want to delete this feedback? This action cannot be undone.")) {
+            try {
+                const itemRef = ref(db, `feedback/${firebaseKey}`);
+                await remove(itemRef);
+                toast.success("Feedback deleted successfully");
+            } catch (error) {
+                console.error("Error deleting feedback:", error);
+                toast.error("Failed to delete feedback");
+            }
         }
     };
 
@@ -280,9 +297,19 @@ const SuperAdminDashboard = () => {
                                                         ))}
                                                     </div>
                                                 </CardTitle>
-                                                <span className="text-sm text-muted-foreground">
-                                                    {new Date(item.date).toLocaleDateString()}
-                                                </span>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-sm text-muted-foreground">
+                                                        {new Date(item.date).toLocaleDateString()}
+                                                    </span>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                                        onClick={() => handleDelete(item.firebaseKey)}
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                </div>
                                             </div>
                                             <CardDescription>
                                                 {item.clientSlug && <span className="font-semibold text-primary mr-2">{item.clientSlug}</span>}
