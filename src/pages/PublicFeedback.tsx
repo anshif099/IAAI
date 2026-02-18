@@ -127,15 +127,15 @@ const PublicFeedback = () => {
         const newFeedback = {
             id: Date.now(),
             rating,
-            comment: feedback,
-            email: user.email,
-            displayName: user.displayName,
-            photoURL: user.photoURL,
-            uid: user.uid,
+            comment: feedback || "",
+            email: user.email || "",
+            displayName: user.displayName || "",
+            photoURL: user.photoURL || "",
+            uid: user.uid || "",
             images: imagesBase64,
             date: new Date().toISOString(),
-            targetUrl: effectiveTargetUrl,
-            clientSlug: slug
+            targetUrl: effectiveTargetUrl || "",
+            clientSlug: slug || "" // Ensure no undefined values
         };
 
         // Always save to localStorage for backup
