@@ -287,11 +287,19 @@ const SuperAdminDashboard = () => {
                                             <CardDescription>
                                                 {item.clientSlug && <span className="font-semibold text-primary mr-2">{item.clientSlug}</span>}
                                                 <span className="text-xs block sm:inline">Target: {item.targetUrl}</span>
-                                                {item.email && (
-                                                    <div className="text-sm font-medium text-blue-600 mt-1">
-                                                        From: {item.email}
+                                                <div className="flex items-center gap-2 mt-2">
+                                                    {item.photoURL && (
+                                                        <img src={item.photoURL} alt="User" className="w-6 h-6 rounded-full" />
+                                                    )}
+                                                    <div className="flex flex-col">
+                                                        {item.displayName && (
+                                                            <span className="text-sm font-medium text-gray-900">{item.displayName}</span>
+                                                        )}
+                                                        {item.email && (
+                                                            <span className="text-xs text-blue-600">{item.email}</span>
+                                                        )}
                                                     </div>
-                                                )}
+                                                </div>
                                             </CardDescription>
                                         </CardHeader>
                                         <CardContent>

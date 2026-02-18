@@ -1,14 +1,13 @@
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import { getDatabase } from "firebase/database";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
+import { getAuth, GoogleAuthProvider } from "firebase/auth";
 
 // Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
     apiKey: "AIzaSyDWjP7fy2ArhbhtV99kn30HR65bpsBHbwk",
     authDomain: "iaai-9c32c.firebaseapp.com",
+    databaseURL: "https://iaai-9c32c-default-rtdb.firebaseio.com",
     projectId: "iaai-9c32c",
     storageBucket: "iaai-9c32c.firebasestorage.app",
     messagingSenderId: "416412637017",
@@ -20,5 +19,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 const db = getDatabase(app);
+const auth = getAuth(app);
+const googleProvider = new GoogleAuthProvider();
 
-export { app, analytics, db };
+export { app, analytics, db, auth, googleProvider };

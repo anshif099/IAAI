@@ -6,8 +6,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Star } from "lucide-react";
 import { toast } from "sonner";
 import { clients, Client } from "@/data/clients";
-import { db } from "@/lib/firebase";
+import { db, auth, googleProvider } from "@/lib/firebase";
 import { ref, push } from "firebase/database";
+import { signInWithPopup, onAuthStateChanged, signOut, User } from "firebase/auth";
 
 const PublicFeedback = () => {
     const [searchParams] = useSearchParams();
@@ -16,6 +17,8 @@ const PublicFeedback = () => {
 
     const [client, setClient] = useState<Client | null>(null);
     const [loading, setLoading] = useState(true);
+    const [user, setUser] = useState<User | null>(null);
+    const [authLoading, setAuthLoading] = useState(true);
 
     // Legacy target URL support
     const targetUrlParam = searchParams.get("target");
@@ -41,12 +44,30 @@ const PublicFeedback = () => {
         setLoading(false);
     }, [slug]);
 
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+            setUser(currentUser);
+            setAuthLoading(false);
+        });
+        return () => unsubscribe();
+    }, []);
+
     // Clean up object URLs on unmount
     useEffect(() => {
         return () => {
             previews.forEach(url => URL.revokeObjectURL(url));
         };
     }, [previews]);
+
+    const handleGoogleSignIn = async () => {
+        try {
+            await signInWithPopup(auth, googleProvider);
+            toast.success("Successfully signed in!");
+        } catch (error) {
+            console.error("Error signing in:", error);
+            toast.error("Failed to sign in with Google.");
+        }
+    };
 
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
@@ -73,17 +94,14 @@ const PublicFeedback = () => {
         });
     };
 
-    const [email, setEmail] = useState("");
-
     const handleSubmit = async () => {
         if (rating === 0) {
             toast.error("Please select a rating");
             return;
         }
 
-        // Require email for low ratings (3 stars or less)
-        if (rating <= 3 && !email) {
-            toast.error("Please provide your email address so we can contact you.");
+        if (!user) {
+            toast.error("You must be signed in to submit feedback.");
             return;
         }
 
@@ -101,18 +119,21 @@ const PublicFeedback = () => {
 
         const effectiveTargetUrl = client?.googleReviewUrl || targetUrlParam;
 
-        // Always save to localStorage
         const newFeedback = {
             id: Date.now(),
             rating,
             comment: feedback,
-            email: email, // Save email
+            email: user.email,
+            displayName: user.displayName,
+            photoURL: user.photoURL,
+            uid: user.uid,
             images: imagesBase64,
             date: new Date().toISOString(),
             targetUrl: effectiveTargetUrl,
-            clientSlug: slug // Track which client this was for
+            clientSlug: slug
         };
 
+        // Always save to localStorage for backup
         const existingFeedback = JSON.parse(localStorage.getItem("internal_feedback") || "[]");
         localStorage.setItem("internal_feedback", JSON.stringify([newFeedback, ...existingFeedback]));
 
@@ -123,7 +144,7 @@ const PublicFeedback = () => {
                 await push(feedbackRef, newFeedback);
             } catch (error) {
                 console.error("Error saving to Firebase:", error);
-                toast.error("Failed to save feedback online, but saved locally.");
+                toast.error("Failed to save feedback online. Please check your connection.");
             }
         }
 
@@ -160,7 +181,12 @@ const PublicFeedback = () => {
         toast.info("Feedback cleared");
     };
 
-    if (loading) {
+    const handleSignOut = () => {
+        signOut(auth);
+        toast.info("Signed out");
+    };
+
+    if (loading || authLoading) {
         return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
     }
 
@@ -170,6 +196,28 @@ const PublicFeedback = () => {
                 <div className="max-w-[500px] w-full text-center space-y-4">
                     <h2 className="text-2xl font-normal text-gray-800">Client Not Found</h2>
                     <p className="text-gray-600">The requested client could not be found.</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (!user) {
+        return (
+            <div className="min-h-screen flex flex-col items-center justify-center bg-white p-4 font-sans">
+                <div className="max-w-[400px] w-full text-center space-y-6">
+                    <div className="mx-auto w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center">
+                        <svg viewBox="0 0 24 24" className="w-8 h-8 text-blue-600 fill-current">
+                            <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 className="text-2xl font-bold text-gray-900 mb-2">Welcome</h1>
+                        <p className="text-gray-600">Please sign in to share your experience with {client ? client.name : "us"}.</p>
+                    </div>
+                    <Button onClick={handleGoogleSignIn} className="w-full h-12 text-lg bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-3">
+                        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-6 h-6" alt="Google" />
+                        Sign in with Google
+                    </Button>
                 </div>
             </div>
         );
@@ -208,17 +256,24 @@ const PublicFeedback = () => {
 
                 {/* User Info */}
                 <div className="flex flex-col items-start space-y-1">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-[#7B1FA2] text-white flex items-center justify-center text-lg font-normal">
-                            W
+                    <div className="flex items-center justify-between w-full">
+                        <div className="flex items-center gap-3">
+                            {user.photoURL ? (
+                                <img src={user.photoURL} alt={user.displayName || "User"} className="w-10 h-10 rounded-full" />
+                            ) : (
+                                <div className="w-10 h-10 rounded-full bg-[#7B1FA2] text-white flex items-center justify-center text-lg font-normal">
+                                    {user.displayName ? user.displayName.charAt(0).toUpperCase() : "U"}
+                                </div>
+                            )}
+                            <div className="flex flex-col">
+                                <span className="text-[1rem] font-medium text-[#3c4043]">{user.displayName || "Google User"}</span>
+                                <span className="text-[0.75rem] text-[#70757a] flex items-center gap-1">
+                                    Posting publicly across Google
+                                    <svg focusable="false" viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-[#70757a]"><path d="M11 7h2v2h-2zm0 4h2v6h-2zm1-9C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"></path></svg>
+                                </span>
+                            </div>
                         </div>
-                        <div className="flex flex-col">
-                            <span className="text-[1rem] font-medium text-[#3c4043]">Google User</span>
-                            <span className="text-[0.75rem] text-[#70757a] flex items-center gap-1">
-                                Posting publicly across Google
-                                <svg focusable="false" viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-[#70757a]"><path d="M11 7h2v2h-2zm0 4h2v6h-2zm1-9C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"></path></svg>
-                            </span>
-                        </div>
+                        <Button variant="ghost" size="sm" onClick={handleSignOut} className="text-gray-500 text-xs">Sign out</Button>
                     </div>
                 </div>
 
@@ -247,20 +302,6 @@ const PublicFeedback = () => {
                         ))}
                     </div>
                 </div>
-
-                {/* Email Input (Visible for low ratings) */}
-                {rating > 0 && rating <= 3 && (
-                    <div className="animate-in fade-in slide-in-from-top-2 duration-300">
-                        <input
-                            type="email"
-                            placeholder="Your email address (Required)"
-                            className="w-full p-3 border border-[#dadce0] rounded-lg outline-none focus:border-[#1a73e8] transition-colors"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            required
-                        />
-                    </div>
-                )}
 
                 {/* Input Area */}
                 <div className="border border-[#dadce0] rounded-lg p-4 min-h-[150px]">
