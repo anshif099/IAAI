@@ -63,9 +63,14 @@ const PublicFeedback = () => {
         try {
             await signInWithPopup(auth, googleProvider);
             toast.success("Successfully signed in!");
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error signing in:", error);
-            toast.error("Failed to sign in with Google.");
+            // Show more specific error to user
+            const errorMessage = error.message || "Unknown error occurred";
+            toast.error(`Failed to sign in: ${errorMessage}`);
+            if (error.code === 'auth/unauthorized-domain') {
+                toast.error("This domain (localhost) is not authorized in Firebase Console.");
+            }
         }
     };
 
