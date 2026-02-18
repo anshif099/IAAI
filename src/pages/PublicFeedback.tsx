@@ -147,6 +147,7 @@ const PublicFeedback = () => {
             try {
                 const feedbackRef = ref(db, 'feedback');
                 await push(feedbackRef, newFeedback);
+                console.log("Feedback pushed to Firebase");
             } catch (error) {
                 console.error("Error saving to Firebase:", error);
                 toast.error("Failed to save feedback online. Please check your connection.");
@@ -155,7 +156,7 @@ const PublicFeedback = () => {
 
         setSubmitted(true);
 
-        if (rating >= 2 && effectiveTargetUrl) {
+        if (rating >= 4 && effectiveTargetUrl) {
             toast.success("Redirecting to Google...");
 
             if (selectedFiles.length > 0) {
@@ -239,7 +240,7 @@ const PublicFeedback = () => {
                     </div>
                     <h2 className="text-2xl font-normal text-gray-800">Thanks for sharing!</h2>
                     <p className="text-gray-600">
-                        {rating >= 2
+                        {rating >= 4
                             ? "Redirecting you to Google Reviews..."
                             : "Your feedback helps us improve."}
                     </p>
