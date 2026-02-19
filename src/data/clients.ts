@@ -26,6 +26,17 @@ export const clients: Client[] = [
             "Customer support is amazing. Solved my issue in minutes.",
             "Reliable and trustworthy. A pleasure to do business with."
         ]
+    },
+    {
+        slug: "rainhopes",
+        name: "Rainhopes",
+        googleReviewUrl: "https://g.page/r/CbQA_s...", // Placeholder
+        suggestedReviews: [
+            "Rainhopes provided an excellent IT solution tailored perfectly to our needs. The team was highly professional throughout the project.",
+            "Outstanding service! Their software development expertise helped us streamline our operations significantly.",
+            "Great communication and timely delivery. Rainhopes truly understands the complexities of modern tech requirements.",
+            "Highly recommend Rainhopes for any digital transformation projects. Their support and maintenance are top-notch."
+        ]
     }
 ];
 

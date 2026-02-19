@@ -330,9 +330,30 @@ const PublicFeedback = () => {
 
     // --- STEP 3: SUGGESTIONS ---
     if (step === 'suggestions') {
-        const suggestions = client?.suggestedReviews || [
-            "Great service!", "Very professional team.", "Highly recommended."
-        ];
+        const getSmartSuggestions = () => {
+            if (client?.suggestedReviews && client.suggestedReviews.length > 0) {
+                return client.suggestedReviews;
+            }
+
+            // Fallback: Smart suggestions based on name/category
+            const name = client?.name.toLowerCase() || "";
+            if (name.includes("rainhopes") || name.includes("tech") || name.includes("software") || name.includes("it")) {
+                return [
+                    "Exceptional IT services! The team at Rainhopes delivered our project on time and within budget.",
+                    "Highly skilled developers and great communication. They transformed our vision into reality.",
+                    "Reliable and professional. Their technical expertise helped us scale our business efficiently.",
+                    "Great support and maintenance. We've been working with Rainhopes for years and they never disappoint."
+                ];
+            }
+
+            return [
+                "Great service! Highly recommended.",
+                "Very professional and friendly staff.",
+                "An amazing experience from start to finish."
+            ];
+        };
+
+        const suggestions = getSmartSuggestions();
 
         return (
             <div className="min-h-screen flex flex-col items-center bg-white font-sans sm:pt-10 p-4">
@@ -345,13 +366,13 @@ const PublicFeedback = () => {
 
                     <div className="grid gap-4 text-left">
                         {suggestions.map((text, i) => (
-                            <div key={i} className="p-4 border rounded-lg bg-gray-50 flex justify-between items-center gap-4">
-                                <p className="text-gray-700 text-sm italic">"{text}"</p>
+                            <div key={i} className="p-4 border rounded-lg bg-gray-50 flex justify-between items-start gap-4">
+                                <p className="text-gray-700 text-sm italic leading-relaxed">"{text}"</p>
                                 <Button
                                     variant="outline"
                                     size="sm"
                                     onClick={() => handleCopyReview(text)}
-                                    className="shrink-0 text-blue-600 border-blue-200 hover:bg-blue-50"
+                                    className="shrink-0 text-blue-600 border-blue-200 hover:bg-blue-50 mt-1"
                                 >
                                     Copy
                                 </Button>
