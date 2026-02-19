@@ -5,9 +5,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Textarea } from "@/components/ui/textarea";
 import { Star } from "lucide-react";
 import { toast } from "sonner";
-import { clients, Client } from "@/data/clients";
+// Client interface defined locally or imported if shared
+interface Client {
+    slug: string;
+    name: string;
+    googleReviewUrl: string;
+    logo?: string;
+    suggestedReviews?: string[];
+}
 import { db, auth, googleProvider } from "@/lib/firebase";
-import { ref, push } from "firebase/database";
+import { ref, push, query, orderByChild, equalTo, onValue } from "firebase/database";
 import { signInWithPopup, onAuthStateChanged, signOut, User } from "firebase/auth";
 
 const PublicFeedback = () => {
@@ -35,15 +42,24 @@ const PublicFeedback = () => {
 
     useEffect(() => {
         if (slug) {
-            const foundClient = clients.find(c => c.slug === slug);
-            if (foundClient) {
-                setClient(foundClient);
-            } else {
-                toast.error("Client not found");
-                // Optional: navigate to 404
-            }
+            const clientsRef = ref(db, 'clients');
+            const clientQuery = query(clientsRef, orderByChild('slug'), equalTo(slug));
+
+            const unsubscribe = onValue(clientQuery, (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    const key = Object.keys(data)[0];
+                    setClient(data[key]);
+                } else {
+                    toast.error("Client not found");
+                }
+                setLoading(false);
+            });
+
+            return () => unsubscribe();
+        } else {
+            setLoading(false);
         }
-        setLoading(false);
     }, [slug]);
 
     useEffect(() => {

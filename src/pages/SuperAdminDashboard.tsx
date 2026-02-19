@@ -10,10 +10,12 @@ import { toast } from "sonner";
 import { Download, Trash2 } from "lucide-react";
 import SuperAdminSidebar from "@/components/SuperAdminSidebar";
 import { db } from "@/lib/firebase";
-import { ref, onValue, remove } from "firebase/database";
+import { ref, onValue, remove, push, set } from "firebase/database";
+import { useNavigate } from "react-router-dom";
 
 const SuperAdminDashboard = () => {
-    const [activeTab, setActiveTab] = useState<"qr" | "feedback">("qr");
+    const [activeTab, setActiveTab] = useState<"qr" | "feedback" | "sellers">("qr");
+    const navigate = useNavigate();
     const [url, setUrl] = useState(() => localStorage.getItem("qr_url") || "https://www.google.com");
     const [color, setColor] = useState(() => localStorage.getItem("qr_color") || "#000000");
     const [logo, setLogo] = useState<string | null>(() => localStorage.getItem("qr_logo") || null);
@@ -43,6 +45,18 @@ const SuperAdminDashboard = () => {
     // Feedback State
     const [feedbackList, setFeedbackList] = useState<any[]>([]);
 
+    // Sellers State
+    const [sellers, setSellers] = useState<any[]>([]);
+    const [newSeller, setNewSeller] = useState({
+        name: "",
+        email: "",
+        password: "",
+        mobile: "",
+        companyName: "",
+        url: "",
+        address: ""
+    });
+
     useEffect(() => {
         const feedbackRef = ref(db, 'feedback');
         const unsubscribe = onValue(feedbackRef, (snapshot) => {
@@ -59,7 +73,24 @@ const SuperAdminDashboard = () => {
             }
         });
 
-        return () => unsubscribe();
+        const sellersRef = ref(db, 'sellers');
+        const unsubscribeSellers = onValue(sellersRef, (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                const sellersArray = Object.entries(data).map(([key, value]) => ({
+                    ...(value as any),
+                    id: key
+                })).reverse();
+                setSellers(sellersArray);
+            } else {
+                setSellers([]);
+            }
+        });
+
+        return () => {
+            unsubscribe();
+            unsubscribeSellers();
+        };
     }, [activeTab]);
 
     const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -118,6 +149,37 @@ const SuperAdminDashboard = () => {
                 toast.error("Failed to delete feedback");
             }
         }
+    };
+
+    const handleCreateSeller = async (e: React.FormEvent) => {
+        e.preventDefault();
+        try {
+            const sellersRef = ref(db, 'sellers');
+            const newSellerRef = push(sellersRef);
+            await set(newSellerRef, {
+                ...newSeller,
+                createdAt: new Date().toISOString()
+            });
+            toast.success("Seller created successfully");
+            setNewSeller({
+                name: "",
+                email: "",
+                password: "",
+                mobile: "",
+                companyName: "",
+                url: "",
+                address: ""
+            });
+        } catch (error) {
+            console.error("Error creating seller:", error);
+            toast.error("Failed to create seller");
+        }
+    };
+
+    const handleLoginAsSeller = (seller: any) => {
+        localStorage.setItem("current_seller", JSON.stringify(seller));
+        toast.success(`Logging in as ${seller.name}...`);
+        navigate("/seller-dashboard");
     };
 
     // Construct the smart URL
@@ -370,6 +432,125 @@ const SuperAdminDashboard = () => {
                                 ))}
                             </div>
                         )}
+                    </div>
+                )}
+
+                {activeTab === "sellers" && (
+                    <div className="max-w-6xl mx-auto space-y-8">
+                        <div>
+                            <h1 className="text-3xl font-bold tracking-tight">Seller Management</h1>
+                            <p className="text-muted-foreground">Manage sellers and access their dashboards</p>
+                        </div>
+
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                            {/* Create Seller Form */}
+                            <Card className="h-fit">
+                                <CardHeader>
+                                    <CardTitle>Add New Seller</CardTitle>
+                                    <CardDescription>Create a new seller account</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <form onSubmit={handleCreateSeller} className="space-y-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="name">Seller Name</Label>
+                                            <Input
+                                                id="name"
+                                                value={newSeller.name}
+                                                onChange={(e) => setNewSeller({ ...newSeller, name: e.target.value })}
+                                                required
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="email">Email</Label>
+                                            <Input
+                                                id="email"
+                                                type="email"
+                                                value={newSeller.email}
+                                                onChange={(e) => setNewSeller({ ...newSeller, email: e.target.value })}
+                                                required
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="password">Password</Label>
+                                            <Input
+                                                id="password"
+                                                type="text"
+                                                value={newSeller.password}
+                                                onChange={(e) => setNewSeller({ ...newSeller, password: e.target.value })}
+                                                required
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="mobile">Mobile</Label>
+                                            <Input
+                                                id="mobile"
+                                                value={newSeller.mobile}
+                                                onChange={(e) => setNewSeller({ ...newSeller, mobile: e.target.value })}
+                                                required
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="companyName">Company Name</Label>
+                                            <Input
+                                                id="companyName"
+                                                value={newSeller.companyName}
+                                                onChange={(e) => setNewSeller({ ...newSeller, companyName: e.target.value })}
+                                                required
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="companyUrl">Company URL</Label>
+                                            <Input
+                                                id="companyUrl"
+                                                value={newSeller.url}
+                                                onChange={(e) => setNewSeller({ ...newSeller, url: e.target.value })}
+                                                required
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="address">Address</Label>
+                                            <Input
+                                                id="address"
+                                                value={newSeller.address}
+                                                onChange={(e) => setNewSeller({ ...newSeller, address: e.target.value })}
+                                                required
+                                            />
+                                        </div>
+                                        <Button type="submit" className="w-full">Create Seller</Button>
+                                    </form>
+                                </CardContent>
+                            </Card>
+
+                            {/* Sellers List */}
+                            <Card className="lg:col-span-2">
+                                <CardHeader>
+                                    <CardTitle>Existing Sellers</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="space-y-4">
+                                        {sellers.length === 0 ? (
+                                            <p className="text-muted-foreground text-center py-4">No sellers found.</p>
+                                        ) : (
+                                            sellers.map((seller) => (
+                                                <div key={seller.id} className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 border rounded-lg gap-4 bg-card hover:bg-accent/5 transition-colors">
+                                                    <div>
+                                                        <h3 className="font-semibold text-lg">{seller.companyName}</h3>
+                                                        <div className="text-sm text-muted-foreground space-y-1">
+                                                            <p>Name: {seller.name}</p>
+                                                            <p>Email: {seller.email}</p>
+                                                            <p>Mobile: {seller.mobile}</p>
+                                                        </div>
+                                                    </div>
+                                                    <Button variant="outline" onClick={() => handleLoginAsSeller(seller)}>
+                                                        Login as Seller
+                                                    </Button>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
                     </div>
                 )}
             </div>
