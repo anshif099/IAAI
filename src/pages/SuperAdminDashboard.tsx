@@ -14,10 +14,31 @@ import { ref, onValue, remove } from "firebase/database";
 
 const SuperAdminDashboard = () => {
     const [activeTab, setActiveTab] = useState<"qr" | "feedback">("qr");
-    const [url, setUrl] = useState("https://www.google.com");
-    const [color, setColor] = useState("#000000");
-    const [logo, setLogo] = useState<string | null>(null);
+    const [url, setUrl] = useState(() => localStorage.getItem("qr_url") || "https://www.google.com");
+    const [color, setColor] = useState(() => localStorage.getItem("qr_color") || "#000000");
+    const [logo, setLogo] = useState<string | null>(() => localStorage.getItem("qr_logo") || null);
     const qrRef = useRef<HTMLDivElement>(null);
+
+    // Persist QR State
+    useEffect(() => {
+        localStorage.setItem("qr_url", url);
+    }, [url]);
+
+    useEffect(() => {
+        localStorage.setItem("qr_color", color);
+    }, [color]);
+
+    useEffect(() => {
+        if (logo) {
+            try {
+                localStorage.setItem("qr_logo", logo);
+            } catch (e) {
+                console.error("Logo too large to save to localStorage");
+            }
+        } else {
+            localStorage.removeItem("qr_logo");
+        }
+    }, [logo]);
 
     // Feedback State
     const [feedbackList, setFeedbackList] = useState<any[]>([]);
