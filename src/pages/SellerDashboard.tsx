@@ -533,6 +533,7 @@ const SellerDashboard = () => {
                                             </div>
                                             <div className="col-span-2 space-y-2">
                                                 <Label>Company URL</Label>
+                                                <p className="text-xs text-muted-foreground">This URL is encoded in your Company QR Code.</p>
                                                 <Input
                                                     value={seller.url}
                                                     onChange={(e) => setSeller({ ...seller, url: e.target.value })}
@@ -643,8 +644,17 @@ const SellerDashboard = () => {
 
                                         {/* QR Preview in View Mode */}
                                         <div className="col-span-2 border-t pt-4 mt-2">
-                                            <Label className="text-muted-foreground mb-4 block">Company QR Code</Label>
-                                            <div className="flex items-center gap-6 bg-muted/20 p-6 rounded-lg w-fit">
+                                            <div className="flex items-center justify-between mb-4">
+                                                <Label className="text-muted-foreground block">Company QR Code</Label>
+                                                <Button variant="outline" size="sm" onClick={() => setIsEditingProfile(true)}>
+                                                    Customize QR
+                                                </Button>
+                                            </div>
+                                            <div
+                                                className="flex items-center gap-6 bg-muted/20 p-6 rounded-lg w-fit cursor-pointer hover:bg-muted/30 transition-colors border border-transparent hover:border-border"
+                                                onClick={() => setIsEditingProfile(true)}
+                                                title="Click to edit QR details"
+                                            >
                                                 <div className="bg-white p-2 rounded border">
                                                     <QRCodeSVG
                                                         value={seller.url || "https://example.com"}
@@ -664,6 +674,7 @@ const SellerDashboard = () => {
                                                     <p><span className="font-medium">Target:</span> {seller.url}</p>
                                                     <p><span className="font-medium">Color:</span> {seller.qrColor || "Default (Black)"}</p>
                                                     <p><span className="font-medium">Logo:</span> {seller.qrLogo ? "Uploaded" : "None"}</p>
+                                                    <p className="text-xs text-primary pt-1">Click to edit</p>
                                                 </div>
                                             </div>
                                         </div>
