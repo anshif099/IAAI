@@ -9,7 +9,7 @@ import { toast } from "sonner";
 interface Client {
     slug: string;
     name: string;
-    googleReviewUrl: string;
+    reviewUrl: string; // Changed from googleReviewUrl to match DB
     logo?: string;
     suggestedReviews?: string[];
 }
@@ -111,23 +111,23 @@ const PublicFeedback = () => {
             toast.error("Please select a rating first.");
             return;
         }
-        setStep('suggestions');
-    };
 
-    const handleNextFromSuggestions = () => {
-        // Logic Split
         if (rating <= 3) {
             setStep('feedback');
         } else {
-            // >= 4 stars -> Redirect to Google
-            handleHighRatingRedirect();
+            setStep('suggestions');
         }
+    };
+
+    const handleNextFromSuggestions = () => {
+        // Since we only reach here for high ratings (4-5), proceed to Google
+        handleHighRatingRedirect();
     };
 
     const handleHighRatingRedirect = async () => {
         // We might want to save the high rating analytic even if they don't leave internal feedback
         // But for now, just redirect.
-        const effectiveTargetUrl = client?.googleReviewUrl || targetUrlParam;
+        const effectiveTargetUrl = client?.reviewUrl || targetUrlParam;
 
         toast.success("Redirecting to Google Reviews...");
 
@@ -216,7 +216,7 @@ const PublicFeedback = () => {
             uid: user.uid || "",
             images: imagesBase64,
             date: new Date().toISOString(),
-            targetUrl: client?.googleReviewUrl || "",
+            targetUrl: client?.reviewUrl || "",
             clientSlug: slug || ""
         };
 
