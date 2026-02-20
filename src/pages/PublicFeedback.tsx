@@ -50,10 +50,30 @@ const PublicFeedback = () => {
                 if (data) {
                     const key = Object.keys(data)[0];
                     setClient(data[key]);
+                    setLoading(false);
                 } else {
-                    toast.error("Client not found");
+                    // Fallback: Search in Sellers
+                    const sellersRef = ref(db, 'sellers');
+                    const sellerQuery = query(sellersRef, orderByChild('slug'), equalTo(slug));
+
+                    onValue(sellerQuery, (sellerSnapshot) => {
+                        const sellerData = sellerSnapshot.val();
+                        if (sellerData) {
+                            const key = Object.keys(sellerData)[0];
+                            const seller = sellerData[key];
+                            setClient({
+                                slug: seller.slug,
+                                name: seller.companyName,
+                                reviewUrl: seller.url, // Map seller.url to reviewUrl
+                                logo: seller.qrLogo,
+                                suggestedReviews: [] // Sellers might not have suggestions yet
+                            });
+                        } else {
+                            toast.error("Client/Seller not found");
+                        }
+                        setLoading(false);
+                    }, { onlyOnce: true });
                 }
-                setLoading(false);
             });
 
             return () => unsubscribe();

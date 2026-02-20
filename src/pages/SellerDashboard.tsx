@@ -52,6 +52,11 @@ const SellerDashboard = () => {
             return;
         }
         setSeller(JSON.parse(storedSeller));
+        // Ensure slug exists in local state for QR generation
+        if (!JSON.parse(storedSeller).slug) {
+            const derivedSlug = JSON.parse(storedSeller).companyName.toLowerCase().replace(/\s+/g, '-');
+            setSeller(prev => ({ ...prev, slug: derivedSlug }));
+        }
     }, [navigate]);
 
     // Fetch Clients
@@ -113,11 +118,21 @@ const SellerDashboard = () => {
         if (!seller) return;
         try {
             const sellerRef = ref(db, `sellers/${seller.id}`);
-            const { id, ...updateData } = seller;
-            await set(sellerRef, updateData);
+            const slug = seller.slug || seller.companyName.toLowerCase().replace(/\s+/g, '-');
+            const updateData = {
+                ...seller,
+                slug,
+                qrColor: seller.qrColor || "#000000",
+                qrLogo: seller.qrLogo || null
+            };
+            const { id, ...dataToSave } = updateData;
 
-            // Update local storage
-            localStorage.setItem("current_seller", JSON.stringify(seller));
+            await set(sellerRef, dataToSave);
+
+            // Update local state with the new slug
+            const updatedSellerLocal = { ...updateData, id: seller.id };
+            setSeller(updatedSellerLocal);
+            localStorage.setItem("current_seller", JSON.stringify(updatedSellerLocal));
 
             toast.success("Profile updated successfully");
             setIsEditingProfile(false);
@@ -499,7 +514,7 @@ const SellerDashboard = () => {
 
                                     <div className="flex justify-center py-2">
                                         <QRCodeSVG
-                                            value={seller.url || "https://example.com"}
+                                            value={`${window.location.origin}/review/${seller.slug || seller.companyName.toLowerCase().replace(/\s+/g, '-')}`}
                                             size={200}
                                             fgColor={seller.qrColor || "#000000"}
                                             level="H"
