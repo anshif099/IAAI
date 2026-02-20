@@ -132,15 +132,17 @@ const PublicFeedback = () => {
             return;
         }
 
-        if (rating <= 3) {
-            setStep('feedback');
-        } else {
-            setStep('suggestions');
-        }
+        // Always show AI suggestions first after rating.
+        setStep('suggestions');
     };
 
     const handleNextFromSuggestions = () => {
-        // Since we only reach here for high ratings (4-5), proceed to Google
+        if (rating <= 3) {
+            setStep('feedback');
+            return;
+        }
+
+        // 4-5 stars should proceed to Google.
         handleHighRatingRedirect();
     };
 
@@ -184,6 +186,10 @@ const PublicFeedback = () => {
     const handleCopyReview = (text: string) => {
         navigator.clipboard.writeText(text).then(() => {
             toast.success("Review copied to clipboard!");
+            if (rating <= 3) {
+                setFeedback((current) => current.trim().length > 0 ? current : text);
+                setStep('feedback');
+            }
         }).catch(() => toast.error("Failed to copy"));
     };
 
@@ -396,8 +402,12 @@ const PublicFeedback = () => {
                 <div className="w-full max-w-[600px] space-y-6 text-center">
                     <UserHeader />
                     <div>
-                        <h2 className="text-xl font-medium text-[#202124] mb-2">Here is what others are saying</h2>
-                        <p className="text-gray-600 text-sm">You can copy a review below or write your own next.</p>
+                        <h2 className="text-xl font-medium text-[#202124] mb-2">AI review suggestions</h2>
+                        <p className="text-gray-600 text-sm">
+                            {rating <= 3
+                                ? "Copy one to continue to private feedback."
+                                : "Copy one below or continue to post on Google."}
+                        </p>
                     </div>
 
                     <div className="grid gap-4 text-left">
@@ -428,7 +438,7 @@ const PublicFeedback = () => {
                             onClick={handleNextFromSuggestions}
                             className="flex-1 bg-[#1a73e8] hover:bg-[#1557b0] text-white"
                         >
-                            Next
+                            {rating <= 3 ? "Continue" : "Post to Google"}
                         </Button>
                     </div>
                 </div>
