@@ -3,6 +3,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
 import { QRCodeSVG } from "qrcode.react";
 import { toPng, toSvg } from "html-to-image";
 import jsPDF from "jspdf";
@@ -56,6 +63,10 @@ const SuperAdminDashboard = () => {
         url: "",
         address: ""
     });
+
+    // View Seller Details State
+    const [selectedSeller, setSelectedSeller] = useState<any>(null);
+    const [isSellerDialogOpen, setIsSellerDialogOpen] = useState(false);
 
     useEffect(() => {
         const feedbackRef = ref(db, 'feedback');
@@ -541,9 +552,17 @@ const SuperAdminDashboard = () => {
                                                             <p>Mobile: {seller.mobile}</p>
                                                         </div>
                                                     </div>
-                                                    <Button variant="outline" onClick={() => handleLoginAsSeller(seller)}>
-                                                        Login as Seller
-                                                    </Button>
+                                                    <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                                                        <Button variant="outline" onClick={() => {
+                                                            setSelectedSeller(seller);
+                                                            setIsSellerDialogOpen(true);
+                                                        }}>
+                                                            View Details
+                                                        </Button>
+                                                        <Button variant="outline" onClick={() => handleLoginAsSeller(seller)}>
+                                                            Login as Seller
+                                                        </Button>
+                                                    </div>
                                                 </div>
                                             ))
                                         )}
@@ -551,6 +570,55 @@ const SuperAdminDashboard = () => {
                                 </CardContent>
                             </Card>
                         </div>
+
+                        <Dialog open={isSellerDialogOpen} onOpenChange={setIsSellerDialogOpen}>
+                            <DialogContent>
+                                <DialogHeader>
+                                    <DialogTitle>Seller Details</DialogTitle>
+                                    <DialogDescription>
+                                        Full information for {selectedSeller?.companyName}
+                                    </DialogDescription>
+                                </DialogHeader>
+                                {selectedSeller && (
+                                    <div className="space-y-4">
+                                        <div className="grid grid-cols-2 gap-4 text-sm">
+                                            <div>
+                                                <Label className="text-muted-foreground">Company Name</Label>
+                                                <p className="font-medium">{selectedSeller.companyName}</p>
+                                            </div>
+                                            <div>
+                                                <Label className="text-muted-foreground">Seller Name</Label>
+                                                <p className="font-medium">{selectedSeller.name}</p>
+                                            </div>
+                                            <div>
+                                                <Label className="text-muted-foreground">Email</Label>
+                                                <p className="font-medium">{selectedSeller.email}</p>
+                                            </div>
+                                            <div>
+                                                <Label className="text-muted-foreground">Mobile</Label>
+                                                <p className="font-medium">{selectedSeller.mobile}</p>
+                                            </div>
+                                            <div>
+                                                <Label className="text-muted-foreground">Address</Label>
+                                                <p className="font-medium">{selectedSeller.address}</p>
+                                            </div>
+                                            <div>
+                                                <Label className="text-muted-foreground">Created At</Label>
+                                                <p className="font-medium">{new Date(selectedSeller.createdAt).toLocaleDateString()}</p>
+                                            </div>
+                                            <div className="col-span-2">
+                                                <Label className="text-muted-foreground">Company URL</Label>
+                                                <p className="font-medium break-all">{selectedSeller.url}</p>
+                                            </div>
+                                            <div className="col-span-2">
+                                                <Label className="text-muted-foreground">Seller ID</Label>
+                                                <p className="font-medium text-xs font-mono bg-muted p-1 rounded">{selectedSeller.id}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </DialogContent>
+                        </Dialog>
                     </div>
                 )}
             </div>
