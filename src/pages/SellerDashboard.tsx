@@ -19,13 +19,16 @@ const SellerDashboard = () => {
     const [isEditingProfile, setIsEditingProfile] = useState(false);
 
     // Clients State
-
-    // Clients State
     const [clients, setClients] = useState<any[]>([]);
     const [newClient, setNewClient] = useState({
         name: "",
+        companyName: "",
         slug: "",
-        googleReviewUrl: "",
+        reviewUrl: "",
+        mobile: "",
+        email: "",
+        password: "",
+        address: "",
         suggestedReviews: "" // comma separated for input
     });
 
@@ -125,8 +128,12 @@ const SellerDashboard = () => {
     const handleCreateClient = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            // Basic slug validation
-            const slug = newClient.slug.toLowerCase().replace(/\s+/g, '-');
+            // Auto-generate slug from Company Name
+            const slug = newClient.companyName
+                .toLowerCase()
+                .trim()
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/^-+|-+$/g, '') || `client-${Date.now()}`;
 
             const clientsRef = ref(db, 'clients');
             const newClientRef = push(clientsRef);
@@ -138,11 +145,21 @@ const SellerDashboard = () => {
                 createdAt: new Date().toISOString()
             });
 
-            toast.success("Client added successfully");
-            setNewClient({ name: "", slug: "", googleReviewUrl: "", suggestedReviews: "" });
+            toast.success("Client created successfully");
+            setNewClient({
+                name: "",
+                companyName: "",
+                slug: "",
+                reviewUrl: "",
+                mobile: "",
+                email: "",
+                password: "",
+                address: "",
+                suggestedReviews: ""
+            });
         } catch (error) {
-            console.error("Error adding client:", error);
-            toast.error("Failed to add client");
+            console.error("Error creating client:", error);
+            toast.error("Failed to create client");
         }
     };
 
@@ -224,28 +241,83 @@ const SellerDashboard = () => {
                                 </CardHeader>
                                 <CardContent>
                                     <form onSubmit={handleCreateClient} className="space-y-4">
-                                        <div className="space-y-2">
-                                            <Label>Client Name</Label>
-                                            <Input value={newClient.name} onChange={e => setNewClient({ ...newClient, name: e.target.value })} required />
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <Label>Client Name</Label>
+                                                <Input
+                                                    placeholder="e.g. John Doe"
+                                                    value={newClient.name}
+                                                    onChange={(e) => setNewClient({ ...newClient, name: e.target.value })}
+                                                    required
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label>Company Name</Label>
+                                                <Input
+                                                    placeholder="e.g. Doe Industries"
+                                                    value={newClient.companyName}
+                                                    onChange={(e) => setNewClient({ ...newClient, companyName: e.target.value })}
+                                                    required
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label>Review URL</Label>
+                                                <Input
+                                                    placeholder="https://g.page/..."
+                                                    value={newClient.reviewUrl}
+                                                    onChange={(e) => setNewClient({ ...newClient, reviewUrl: e.target.value })}
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label>Mobile</Label>
+                                                <Input
+                                                    placeholder="Mobile Number"
+                                                    value={newClient.mobile}
+                                                    onChange={(e) => setNewClient({ ...newClient, mobile: e.target.value })}
+                                                    required
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label>Email</Label>
+                                                <Input
+                                                    type="email"
+                                                    placeholder="client@example.com"
+                                                    value={newClient.email}
+                                                    onChange={(e) => setNewClient({ ...newClient, email: e.target.value })}
+                                                    required
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label>Password</Label>
+                                                <Input
+                                                    type="password"
+                                                    placeholder="Password"
+                                                    value={newClient.password}
+                                                    onChange={(e) => setNewClient({ ...newClient, password: e.target.value })}
+                                                    required
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label>Address</Label>
+                                                <Input
+                                                    placeholder="Full Address"
+                                                    value={newClient.address}
+                                                    onChange={(e) => setNewClient({ ...newClient, address: e.target.value })}
+                                                    required
+                                                />
+                                            </div>
                                         </div>
                                         <div className="space-y-2">
-                                            <Label>Slug (URL Friendly)</Label>
-                                            <Input value={newClient.slug} onChange={e => setNewClient({ ...newClient, slug: e.target.value })} placeholder="e.g. my-business" required />
-                                            <p className="text-xs text-muted-foreground">Public URL: {window.location.origin}/review/{newClient.slug || 'slug'}</p>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label>Google Review URL</Label>
-                                            <Input value={newClient.googleReviewUrl} onChange={e => setNewClient({ ...newClient, googleReviewUrl: e.target.value })} required />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label>Suggested Reviews (One per line)</Label>
+                                            <Label>Suggested Positive Reviews (One per line)</Label>
                                             <textarea
                                                 className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                                placeholder="Great service!&#10;Highly recommended."
                                                 value={newClient.suggestedReviews}
-                                                onChange={e => setNewClient({ ...newClient, suggestedReviews: e.target.value })}
+                                                onChange={(e) => setNewClient({ ...newClient, suggestedReviews: e.target.value })}
+                                                rows={3}
                                             />
                                         </div>
-                                        <Button type="submit" className="w-full">Add Client</Button>
+                                        <Button type="submit" className="w-full">Create Client</Button>
                                     </form>
                                 </CardContent>
                             </Card>
@@ -258,7 +330,7 @@ const SellerDashboard = () => {
                                             <CardDescription>/{client.slug}</CardDescription>
                                         </CardHeader>
                                         <CardContent>
-                                            <a href={client.googleReviewUrl} target="_blank" rel="noreferrer" className="text-sm text-blue-600 hover:underline break-all">{client.googleReviewUrl}</a>
+                                            <a href={client.reviewUrl} target="_blank" rel="noreferrer" className="text-sm text-blue-600 hover:underline break-all">{client.reviewUrl}</a>
                                         </CardContent>
                                     </Card>
                                 ))}
