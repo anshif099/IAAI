@@ -16,6 +16,7 @@ const SellerDashboard = () => {
     const navigate = useNavigate();
     const [seller, setSeller] = useState<any>(null);
     const [activeTab, setActiveTab] = useState<"clients" | "qr" | "feedback" | "profile">("clients");
+    const [isEditingProfile, setIsEditingProfile] = useState(false);
 
     // Clients State
 
@@ -101,6 +102,24 @@ const SellerDashboard = () => {
     const handleLogout = () => {
         localStorage.removeItem("current_seller");
         navigate("/login");
+    };
+
+    const handleUpdateProfile = async () => {
+        if (!seller) return;
+        try {
+            const sellerRef = ref(db, `sellers/${seller.id}`);
+            const { id, ...updateData } = seller;
+            await set(sellerRef, updateData);
+
+            // Update local storage
+            localStorage.setItem("current_seller", JSON.stringify(seller));
+
+            toast.success("Profile updated successfully");
+            setIsEditingProfile(false);
+        } catch (error) {
+            console.error("Error updating profile:", error);
+            toast.error("Failed to update profile");
+        }
     };
 
     const handleCreateClient = async (e: React.FormEvent) => {
@@ -454,48 +473,117 @@ const SellerDashboard = () => {
                     <div className="max-w-4xl mx-auto space-y-8">
                         <div>
                             <h1 className="text-3xl font-bold">Seller Profile</h1>
-                            <p className="text-muted-foreground">Your registered company details.</p>
+                            <p className="text-muted-foreground">Manage your account details.</p>
                         </div>
                         <Card>
-                            <CardHeader>
-                                <CardTitle>Profile Information</CardTitle>
-                                <CardDescription>These details are managed by the Super Admin.</CardDescription>
+                            <CardHeader className="flex flex-row items-center justify-between">
+                                <div>
+                                    <CardTitle>Profile Information</CardTitle>
+                                    <CardDescription>{isEditingProfile ? "Edit your details below." : "Your registered company details."}</CardDescription>
+                                </div>
+                                {!isEditingProfile && (
+                                    <Button onClick={() => setIsEditingProfile(true)}>Edit Profile</Button>
+                                )}
                             </CardHeader>
                             <CardContent className="space-y-6">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="space-y-2">
-                                        <Label className="text-muted-foreground">Company Name</Label>
-                                        <p className="font-medium text-lg">{seller.companyName}</p>
+                                {isEditingProfile ? (
+                                    <div className="space-y-4">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <Label>Company Name</Label>
+                                                <Input
+                                                    value={seller.companyName}
+                                                    onChange={(e) => setSeller({ ...seller, companyName: e.target.value })}
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label>Seller Name</Label>
+                                                <Input
+                                                    value={seller.name}
+                                                    onChange={(e) => setSeller({ ...seller, name: e.target.value })}
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label>Email</Label>
+                                                <Input
+                                                    value={seller.email}
+                                                    onChange={(e) => setSeller({ ...seller, email: e.target.value })}
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label>Password</Label>
+                                                <Input
+                                                    value={seller.password}
+                                                    onChange={(e) => setSeller({ ...seller, password: e.target.value })}
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label>Mobile</Label>
+                                                <Input
+                                                    value={seller.mobile}
+                                                    onChange={(e) => setSeller({ ...seller, mobile: e.target.value })}
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label>Address</Label>
+                                                <Input
+                                                    value={seller.address}
+                                                    onChange={(e) => setSeller({ ...seller, address: e.target.value })}
+                                                />
+                                            </div>
+                                            <div className="col-span-2 space-y-2">
+                                                <Label>Company URL</Label>
+                                                <Input
+                                                    value={seller.url}
+                                                    onChange={(e) => setSeller({ ...seller, url: e.target.value })}
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="flex justify-end gap-2 pt-4">
+                                            <Button variant="outline" onClick={() => setIsEditingProfile(false)}>Cancel</Button>
+                                            <Button onClick={handleUpdateProfile}>Save Changes</Button>
+                                        </div>
                                     </div>
-                                    <div className="space-y-2">
-                                        <Label className="text-muted-foreground">Seller Name</Label>
-                                        <p className="font-medium text-lg">{seller.name}</p>
+                                ) : (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="space-y-2">
+                                            <Label className="text-muted-foreground">Company Name</Label>
+                                            <p className="font-medium text-lg">{seller.companyName}</p>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-muted-foreground">Seller Name</Label>
+                                            <p className="font-medium text-lg">{seller.name}</p>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-muted-foreground">Email</Label>
+                                            <p className="font-medium text-lg">{seller.email}</p>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-muted-foreground">Password</Label>
+                                            <p className="font-medium text-lg font-mono bg-muted p-1 rounded w-fit">{seller.password}</p>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-muted-foreground">Mobile</Label>
+                                            <p className="font-medium text-lg">{seller.mobile}</p>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-muted-foreground">Address</Label>
+                                            <p className="font-medium text-lg">{seller.address}</p>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-muted-foreground">Joined Date</Label>
+                                            <p className="font-medium text-lg">{new Date(seller.createdAt).toLocaleDateString()}</p>
+                                        </div>
+                                        <div className="col-span-2 space-y-2">
+                                            <Label className="text-muted-foreground">Company URL</Label>
+                                            <p className="font-medium text-lg break-all">{seller.url}</p>
+                                        </div>
+                                        <div className="col-span-2 space-y-2">
+                                            <Label className="text-muted-foreground">Seller ID</Label>
+                                            <p className="font-mono text-sm bg-muted p-2 rounded w-fit">{seller.id}</p>
+                                        </div>
                                     </div>
-                                    <div className="space-y-2">
-                                        <Label className="text-muted-foreground">Email</Label>
-                                        <p className="font-medium text-lg">{seller.email}</p>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label className="text-muted-foreground">Mobile</Label>
-                                        <p className="font-medium text-lg">{seller.mobile}</p>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label className="text-muted-foreground">Address</Label>
-                                        <p className="font-medium text-lg">{seller.address}</p>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label className="text-muted-foreground">Joined Date</Label>
-                                        <p className="font-medium text-lg">{new Date(seller.createdAt).toLocaleDateString()}</p>
-                                    </div>
-                                    <div className="col-span-2 space-y-2">
-                                        <Label className="text-muted-foreground">Company URL</Label>
-                                        <p className="font-medium text-lg break-all">{seller.url}</p>
-                                    </div>
-                                    <div className="col-span-2 space-y-2">
-                                        <Label className="text-muted-foreground">Seller ID</Label>
-                                        <p className="font-mono text-sm bg-muted p-2 rounded w-fit">{seller.id}</p>
-                                    </div>
-                                </div>
+                                )}
                             </CardContent>
                         </Card>
                     </div>
