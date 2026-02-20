@@ -67,6 +67,14 @@ const SuperAdminDashboard = () => {
     // View Seller Details State
     const [selectedSeller, setSelectedSeller] = useState<any>(null);
     const [isSellerDialogOpen, setIsSellerDialogOpen] = useState(false);
+    const [isEditingSeller, setIsEditingSeller] = useState(false);
+
+    // Reset edit mode when dialog closes
+    useEffect(() => {
+        if (!isSellerDialogOpen) {
+            setIsEditingSeller(false);
+        }
+    }, [isSellerDialogOpen]);
 
     useEffect(() => {
         const feedbackRef = ref(db, 'feedback');
@@ -191,6 +199,21 @@ const SuperAdminDashboard = () => {
         localStorage.setItem("current_seller", JSON.stringify(seller));
         toast.success(`Logging in as ${seller.name}...`);
         navigate("/seller-dashboard");
+    };
+
+    const handleUpdateSeller = async () => {
+        if (!selectedSeller) return;
+        try {
+            const sellerRef = ref(db, `sellers/${selectedSeller.id}`);
+            // Remove the ID from the object before saving
+            const { id, ...updateData } = selectedSeller;
+            await set(sellerRef, updateData);
+            toast.success("Seller updated successfully");
+            setIsEditingSeller(false);
+        } catch (error) {
+            console.error("Error updating seller:", error);
+            toast.error("Failed to update seller");
+        }
     };
 
     // Construct the smart URL
@@ -576,45 +599,196 @@ const SuperAdminDashboard = () => {
                                 <DialogHeader>
                                     <DialogTitle>Seller Details</DialogTitle>
                                     <DialogDescription>
-                                        Full information for {selectedSeller?.companyName}
+                                        {isEditingSeller ? "Edit seller information and QR settings" : `Full information for ${selectedSeller?.companyName}`}
                                     </DialogDescription>
                                 </DialogHeader>
                                 {selectedSeller && (
                                     <div className="space-y-4">
-                                        <div className="grid grid-cols-2 gap-4 text-sm">
-                                            <div>
-                                                <Label className="text-muted-foreground">Company Name</Label>
-                                                <p className="font-medium">{selectedSeller.companyName}</p>
+                                        {isEditingSeller ? (
+                                            <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div className="space-y-2">
+                                                        <Label>Company Name</Label>
+                                                        <Input
+                                                            value={selectedSeller.companyName}
+                                                            onChange={(e) => setSelectedSeller({ ...selectedSeller, companyName: e.target.value })}
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <Label>Seller Name</Label>
+                                                        <Input
+                                                            value={selectedSeller.name}
+                                                            onChange={(e) => setSelectedSeller({ ...selectedSeller, name: e.target.value })}
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <Label>Email</Label>
+                                                        <Input
+                                                            value={selectedSeller.email}
+                                                            onChange={(e) => setSelectedSeller({ ...selectedSeller, email: e.target.value })}
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <Label>Password</Label>
+                                                        <Input
+                                                            value={selectedSeller.password}
+                                                            onChange={(e) => setSelectedSeller({ ...selectedSeller, password: e.target.value })}
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <Label>Mobile</Label>
+                                                        <Input
+                                                            value={selectedSeller.mobile}
+                                                            onChange={(e) => setSelectedSeller({ ...selectedSeller, mobile: e.target.value })}
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <Label>Address</Label>
+                                                        <Input
+                                                            value={selectedSeller.address}
+                                                            onChange={(e) => setSelectedSeller({ ...selectedSeller, address: e.target.value })}
+                                                        />
+                                                    </div>
+                                                    <div className="col-span-2 space-y-2">
+                                                        <Label>Company URL</Label>
+                                                        <Input
+                                                            value={selectedSeller.url}
+                                                            onChange={(e) => setSelectedSeller({ ...selectedSeller, url: e.target.value })}
+                                                        />
+                                                    </div>
+
+                                                    {/* QR Customization */}
+                                                    <div className="col-span-2 border-t pt-4 mt-2">
+                                                        <h4 className="font-semibold mb-2">QR Code Settings</h4>
+                                                        <div className="flex gap-4 items-start">
+                                                            <div className="space-y-4 flex-1">
+                                                                <div className="space-y-2">
+                                                                    <Label>QR Color</Label>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <Input
+                                                                            type="color"
+                                                                            value={selectedSeller.qrColor || "#000000"}
+                                                                            onChange={(e) => setSelectedSeller({ ...selectedSeller, qrColor: e.target.value })}
+                                                                            className="w-12 h-10 p-1"
+                                                                        />
+                                                                        <span className="text-sm text-muted-foreground">{selectedSeller.qrColor || "#000000"}</span>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="space-y-2">
+                                                                    <Label>Logo Overlay</Label>
+                                                                    <Input
+                                                                        type="file"
+                                                                        accept="image/*"
+                                                                        onChange={(e) => {
+                                                                            const file = e.target.files?.[0];
+                                                                            if (file) {
+                                                                                const reader = new FileReader();
+                                                                                reader.onload = (ev) => {
+                                                                                    setSelectedSeller({ ...selectedSeller, qrLogo: ev.target?.result as string });
+                                                                                };
+                                                                                reader.readAsDataURL(file);
+                                                                            }
+                                                                        }}
+                                                                    />
+                                                                    {selectedSeller.qrLogo && (
+                                                                        <Button variant="outline" size="sm" onClick={() => setSelectedSeller({ ...selectedSeller, qrLogo: null })}>
+                                                                            Remove Logo
+                                                                        </Button>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                            <div className="bg-white p-4 rounded border shadow-sm flex items-center justify-center">
+                                                                <QRCodeSVG
+                                                                    value={selectedSeller.url || "https://example.com"}
+                                                                    size={120}
+                                                                    fgColor={selectedSeller.qrColor || "#000000"}
+                                                                    imageSettings={selectedSeller.qrLogo ? {
+                                                                        src: selectedSeller.qrLogo,
+                                                                        x: undefined,
+                                                                        y: undefined,
+                                                                        height: 24,
+                                                                        width: 24,
+                                                                        excavate: true,
+                                                                    } : undefined}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex justify-end gap-2 pt-4">
+                                                    <Button variant="outline" onClick={() => setIsEditingSeller(false)}>Cancel</Button>
+                                                    <Button onClick={handleUpdateSeller}>Save Changes</Button>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <Label className="text-muted-foreground">Seller Name</Label>
-                                                <p className="font-medium">{selectedSeller.name}</p>
+                                        ) : (
+                                            <div className="space-y-4">
+                                                <div className="grid grid-cols-2 gap-4 text-sm">
+                                                    <div>
+                                                        <Label className="text-muted-foreground">Company Name</Label>
+                                                        <p className="font-medium">{selectedSeller.companyName}</p>
+                                                    </div>
+                                                    <div>
+                                                        <Label className="text-muted-foreground">Seller Name</Label>
+                                                        <p className="font-medium">{selectedSeller.name}</p>
+                                                    </div>
+                                                    <div>
+                                                        <Label className="text-muted-foreground">Email</Label>
+                                                        <p className="font-medium">{selectedSeller.email}</p>
+                                                    </div>
+                                                    <div>
+                                                        <Label className="text-muted-foreground">Password</Label>
+                                                        <p className="font-medium font-mono bg-muted p-1 rounded w-fit">{selectedSeller.password}</p>
+                                                    </div>
+                                                    <div>
+                                                        <Label className="text-muted-foreground">Mobile</Label>
+                                                        <p className="font-medium">{selectedSeller.mobile}</p>
+                                                    </div>
+                                                    <div>
+                                                        <Label className="text-muted-foreground">Address</Label>
+                                                        <p className="font-medium">{selectedSeller.address}</p>
+                                                    </div>
+                                                    <div>
+                                                        <Label className="text-muted-foreground">Created At</Label>
+                                                        <p className="font-medium">{new Date(selectedSeller.createdAt).toLocaleDateString()}</p>
+                                                    </div>
+                                                    <div className="col-span-2">
+                                                        <Label className="text-muted-foreground">Company URL</Label>
+                                                        <p className="font-medium break-all">{selectedSeller.url}</p>
+                                                    </div>
+                                                    <div className="col-span-2">
+                                                        <Label className="text-muted-foreground">Seller ID</Label>
+                                                        <p className="font-medium text-xs font-mono bg-muted p-1 rounded">{selectedSeller.id}</p>
+                                                    </div>
+
+                                                    {/* QR Preview in View Mode */}
+                                                    <div className="col-span-2 border-t pt-4 mt-2">
+                                                        <Label className="text-muted-foreground mb-2 block">QR Code Preview</Label>
+                                                        <div className="flex items-center gap-4 bg-muted/20 p-4 rounded">
+                                                            <QRCodeSVG
+                                                                value={selectedSeller.url || "https://example.com"}
+                                                                size={80}
+                                                                fgColor={selectedSeller.qrColor || "#000000"}
+                                                                imageSettings={selectedSeller.qrLogo ? {
+                                                                    src: selectedSeller.qrLogo,
+                                                                    x: undefined,
+                                                                    y: undefined,
+                                                                    height: 20,
+                                                                    width: 20,
+                                                                    excavate: true,
+                                                                } : undefined}
+                                                            />
+                                                            <div className="text-xs text-muted-foreground">
+                                                                <p>Color: {selectedSeller.qrColor || "Default (Black)"}</p>
+                                                                <p>Logo: {selectedSeller.qrLogo ? "Uploaded" : "None"}</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex justify-end pt-4">
+                                                    <Button onClick={() => setIsEditingSeller(true)}>Edit Details</Button>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <Label className="text-muted-foreground">Email</Label>
-                                                <p className="font-medium">{selectedSeller.email}</p>
-                                            </div>
-                                            <div>
-                                                <Label className="text-muted-foreground">Mobile</Label>
-                                                <p className="font-medium">{selectedSeller.mobile}</p>
-                                            </div>
-                                            <div>
-                                                <Label className="text-muted-foreground">Address</Label>
-                                                <p className="font-medium">{selectedSeller.address}</p>
-                                            </div>
-                                            <div>
-                                                <Label className="text-muted-foreground">Created At</Label>
-                                                <p className="font-medium">{new Date(selectedSeller.createdAt).toLocaleDateString()}</p>
-                                            </div>
-                                            <div className="col-span-2">
-                                                <Label className="text-muted-foreground">Company URL</Label>
-                                                <p className="font-medium break-all">{selectedSeller.url}</p>
-                                            </div>
-                                            <div className="col-span-2">
-                                                <Label className="text-muted-foreground">Seller ID</Label>
-                                                <p className="font-medium text-xs font-mono bg-muted p-1 rounded">{selectedSeller.id}</p>
-                                            </div>
-                                        </div>
+                                        )}
                                     </div>
                                 )}
                             </DialogContent>

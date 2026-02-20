@@ -6,6 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { ArrowLeft } from "lucide-react";
+import { db } from "@/lib/firebase";
+import { ref, query, orderByChild, equalTo, get } from "firebase/database";
 
 const Login = () => {
     const [email, setEmail] = useState("");
@@ -13,27 +15,47 @@ const Login = () => {
     const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
 
-    const handleLogin = (e: React.FormEvent) => {
+    const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
 
-        // Simulate login API call
-
-        setTimeout(() => {
-            setIsLoading(false);
-            if (email === "iaai@gmail.com" && password === "iaai@123") {
-                console.log("Super Admin Login Successful");
+        // 1. Check Super Admin
+        if (email === "iaai@gmail.com" && password === "iaai@123") {
+            setTimeout(() => {
+                setIsLoading(false);
                 toast.success("Logged in successfully as Super Admin!");
                 navigate("/super-admin");
+            }, 500);
+            return;
+        }
+
+        // 2. Check Seller Login (Firebase)
+        try {
+            const sellersRef = ref(db, 'sellers');
+            const emailQuery = query(sellersRef, orderByChild('email'), equalTo(email));
+            const snapshot = await get(emailQuery);
+
+            if (snapshot.exists()) {
+                const sellersData = snapshot.val();
+                const sellerKey = Object.keys(sellersData)[0];
+                const seller = { ...sellersData[sellerKey], id: sellerKey };
+
+                if (seller.password === password) {
+                    localStorage.setItem("current_seller", JSON.stringify(seller));
+                    toast.success(`Welcome back, ${seller.name}!`);
+                    navigate("/seller-dashboard");
+                } else {
+                    toast.error("Invalid password");
+                }
             } else {
-                // For now, keeping the simulation for other users or just fail it? 
-                // The request implies specifically setting these credentials. 
-                // I'll make it fail for anything else to be safe/clear, or just log it.
-                // Let's assume ONLY this user can login for now based on "password hardcoded on code".
-                console.log("Login failed");
-                toast.error("Invalid credentials");
+                toast.error("User not found");
             }
-        }, 1500);
+        } catch (error) {
+            console.error("Login error:", error);
+            toast.error("Login failed due to a system error");
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
