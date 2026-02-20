@@ -8,10 +8,10 @@ import { QRCodeSVG } from "qrcode.react";
 import { toPng, toSvg } from "html-to-image";
 import jsPDF from "jspdf";
 import { toast } from "sonner";
-import { Download, LogOut, LayoutDashboard, MessageSquare, Users } from "lucide-react";
+import { Download, LogOut, LayoutDashboard, MessageSquare, Users, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { db } from "@/lib/firebase";
-import { ref, onValue, push, set, query, orderByChild, equalTo, update } from "firebase/database";
+import { ref, onValue, push, set, query, orderByChild, equalTo, update, remove } from "firebase/database";
 
 const stripSensitiveSellerData = (sellerData: any) => {
     if (!sellerData) return sellerData;
@@ -144,6 +144,19 @@ const SellerDashboard = () => {
         });
         return () => unsubscribe();
     }, [seller]);
+
+    const handleDeleteFeedback = async (id: string) => {
+        if (window.confirm("Are you sure you want to delete this feedback?")) {
+            try {
+                const feedbackRef = ref(db, `feedback/${id}`);
+                await remove(feedbackRef);
+                toast.success("Feedback deleted successfully");
+            } catch (error) {
+                console.error("Error deleting feedback:", error);
+                toast.error("Failed to delete feedback");
+            }
+        }
+    };
 
     const handleLogout = () => {
         localStorage.removeItem("current_seller");
@@ -591,7 +604,17 @@ const SellerDashboard = () => {
                                         <CardHeader>
                                             <CardTitle className="flex justify-between">
                                                 <span>Rating: {item.rating}/5</span>
-                                                <span className="text-sm font-normal text-muted-foreground">{new Date(item.date).toLocaleDateString()}</span>
+                                                <div className="flex items-center gap-4 text-sm font-normal text-muted-foreground">
+                                                    <span>{new Date(item.date).toLocaleDateString()}</span>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => handleDeleteFeedback(item.id)}
+                                                        className="h-8 px-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                </div>
                                             </CardTitle>
                                             <CardDescription>Client: {item.clientSlug}</CardDescription>
                                         </CardHeader>
