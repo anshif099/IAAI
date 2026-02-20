@@ -13,6 +13,12 @@ import { useNavigate } from "react-router-dom";
 import { db } from "@/lib/firebase";
 import { ref, onValue, push, set, query, orderByChild, equalTo, update } from "firebase/database";
 
+const stripSensitiveSellerData = (sellerData: any) => {
+    if (!sellerData) return sellerData;
+    const { password, ...safeSeller } = sellerData;
+    return safeSeller;
+};
+
 const SellerDashboard = () => {
     const navigate = useNavigate();
     const [seller, setSeller] = useState<any>(null);
@@ -61,13 +67,36 @@ const SellerDashboard = () => {
 
             // Update Local State
             setSeller(updatedSeller);
-            localStorage.setItem("current_seller", JSON.stringify(updatedSeller));
+            localStorage.setItem("current_seller", JSON.stringify(stripSensitiveSellerData(updatedSeller)));
 
             // Update Firebase
             const sellerRef = ref(db, `sellers/${loadedSeller.id}`);
             update(sellerRef, { slug: derivedSlug }).catch(err => console.error("Failed to auto-save slug", err));
         }
     }, [navigate]);
+
+    // Keep seller state synced with Firebase so Super Admin updates are reflected in QR Gen.
+    useEffect(() => {
+        if (!seller?.id) return;
+
+        const sellerRef = ref(db, `sellers/${seller.id}`);
+        const unsubscribe = onValue(sellerRef, (snapshot) => {
+            const latestSeller = snapshot.val();
+            if (!latestSeller) return;
+
+            const syncedSeller = { ...latestSeller, id: seller.id };
+            setSeller((currentSeller: any) => {
+                if (JSON.stringify(currentSeller) === JSON.stringify(syncedSeller)) {
+                    return currentSeller;
+                }
+
+                localStorage.setItem("current_seller", JSON.stringify(stripSensitiveSellerData(syncedSeller)));
+                return syncedSeller;
+            });
+        });
+
+        return () => unsubscribe();
+    }, [seller?.id]);
 
     // Fetch Clients
     useEffect(() => {
@@ -142,7 +171,7 @@ const SellerDashboard = () => {
             // Update local state with the new slug
             const updatedSellerLocal = { ...updateData, id: seller.id };
             setSeller(updatedSellerLocal);
-            localStorage.setItem("current_seller", JSON.stringify(updatedSellerLocal));
+            localStorage.setItem("current_seller", JSON.stringify(stripSensitiveSellerData(updatedSellerLocal)));
 
             toast.success("Profile updated successfully");
             setIsEditingProfile(false);
@@ -639,6 +668,7 @@ const SellerDashboard = () => {
                                             <div className="space-y-2">
                                                 <Label>Password</Label>
                                                 <Input
+                                                    type="password"
                                                     value={seller.password}
                                                     onChange={(e) => setSeller({ ...seller, password: e.target.value })}
                                                 />
@@ -745,7 +775,7 @@ const SellerDashboard = () => {
                                         </div>
                                         <div className="space-y-2">
                                             <Label className="text-muted-foreground">Password</Label>
-                                            <p className="font-medium text-lg font-mono bg-muted p-1 rounded w-fit">{seller.password}</p>
+                                            <p className="font-medium text-lg font-mono bg-muted p-1 rounded w-fit">********</p>
                                         </div>
                                         <div className="space-y-2">
                                             <Label className="text-muted-foreground">Mobile</Label>
