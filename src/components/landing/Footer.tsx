@@ -18,7 +18,7 @@ const Footer = () => (
     </div>
 
     <p className="mt-8 text-center text-xs text-muted-foreground">
-      © 2026 IAAI. All rights reserved.
+      © 2026 GROWthQR. All rights reserved.
     </p>
   </footer>
 );

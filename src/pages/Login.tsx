@@ -20,7 +20,7 @@ const Login = () => {
         setIsLoading(true);
 
         // 1. Check Super Admin
-        if (email === "iaai@gmail.com" && password === "iaai@123") {
+        if (email === "growthqr@gmail.com" && password === "growthqr@123") {
             setTimeout(() => {
                 setIsLoading(false);
                 toast.success("Logged in successfully as Super Admin!");

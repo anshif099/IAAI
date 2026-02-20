@@ -1,7 +1,7 @@
 import { LogIn, QrCode, BarChart3 } from "lucide-react";
 
 const steps = [
-  { icon: LogIn, title: "Login to IAAI", desc: "Sign in with your business account to access the dashboard." },
+  { icon: LogIn, title: "Login to GROWthQR", desc: "Sign in with your business account to access the dashboard." },
   { icon: QrCode, title: "Generate Review QR Codes", desc: "Create QR codes that link directly to your Google review page." },
   { icon: BarChart3, title: "AI Analyzes Reviews", desc: "Our AI processes reviews and surfaces sentiment, trends, and insights." },
 ];
