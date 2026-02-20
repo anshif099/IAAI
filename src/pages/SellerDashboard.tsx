@@ -538,6 +538,64 @@ const SellerDashboard = () => {
                                                     onChange={(e) => setSeller({ ...seller, url: e.target.value })}
                                                 />
                                             </div>
+
+                                            {/* QR Customization in Edit Mode */}
+                                            <div className="col-span-2 border-t pt-4 mt-2">
+                                                <h4 className="font-semibold mb-2">QR Code Settings</h4>
+                                                <div className="flex flex-col md:flex-row gap-4 items-start">
+                                                    <div className="space-y-4 flex-1 w-full">
+                                                        <div className="space-y-2">
+                                                            <Label>QR Color</Label>
+                                                            <div className="flex items-center gap-2">
+                                                                <Input
+                                                                    type="color"
+                                                                    value={seller.qrColor || "#000000"}
+                                                                    onChange={(e) => setSeller({ ...seller, qrColor: e.target.value })}
+                                                                    className="w-12 h-10 p-1"
+                                                                />
+                                                                <span className="text-sm text-muted-foreground">{seller.qrColor || "#000000"}</span>
+                                                            </div>
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                            <Label>Logo Overlay</Label>
+                                                            <Input
+                                                                type="file"
+                                                                accept="image/*"
+                                                                onChange={(e) => {
+                                                                    const file = e.target.files?.[0];
+                                                                    if (file) {
+                                                                        const reader = new FileReader();
+                                                                        reader.onload = (ev) => {
+                                                                            setSeller({ ...seller, qrLogo: ev.target?.result as string });
+                                                                        };
+                                                                        reader.readAsDataURL(file);
+                                                                    }
+                                                                }}
+                                                            />
+                                                            {seller.qrLogo && (
+                                                                <Button variant="outline" size="sm" onClick={() => setSeller({ ...seller, qrLogo: null })}>
+                                                                    Remove Logo
+                                                                </Button>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    <div className="bg-white p-4 rounded border shadow-sm flex items-center justify-center mx-auto md:mx-0">
+                                                        <QRCodeSVG
+                                                            value={seller.url || "https://example.com"}
+                                                            size={120}
+                                                            fgColor={seller.qrColor || "#000000"}
+                                                            imageSettings={seller.qrLogo ? {
+                                                                src: seller.qrLogo,
+                                                                x: undefined,
+                                                                y: undefined,
+                                                                height: 24,
+                                                                width: 24,
+                                                                excavate: true,
+                                                            } : undefined}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
                                         <div className="flex justify-end gap-2 pt-4">
                                             <Button variant="outline" onClick={() => setIsEditingProfile(false)}>Cancel</Button>
@@ -581,6 +639,33 @@ const SellerDashboard = () => {
                                         <div className="col-span-2 space-y-2">
                                             <Label className="text-muted-foreground">Seller ID</Label>
                                             <p className="font-mono text-sm bg-muted p-2 rounded w-fit">{seller.id}</p>
+                                        </div>
+
+                                        {/* QR Preview in View Mode */}
+                                        <div className="col-span-2 border-t pt-4 mt-2">
+                                            <Label className="text-muted-foreground mb-4 block">Company QR Code</Label>
+                                            <div className="flex items-center gap-6 bg-muted/20 p-6 rounded-lg w-fit">
+                                                <div className="bg-white p-2 rounded border">
+                                                    <QRCodeSVG
+                                                        value={seller.url || "https://example.com"}
+                                                        size={100}
+                                                        fgColor={seller.qrColor || "#000000"}
+                                                        imageSettings={seller.qrLogo ? {
+                                                            src: seller.qrLogo,
+                                                            x: undefined,
+                                                            y: undefined,
+                                                            height: 24,
+                                                            width: 24,
+                                                            excavate: true,
+                                                        } : undefined}
+                                                    />
+                                                </div>
+                                                <div className="text-sm text-muted-foreground space-y-1">
+                                                    <p><span className="font-medium">Target:</span> {seller.url}</p>
+                                                    <p><span className="font-medium">Color:</span> {seller.qrColor || "Default (Black)"}</p>
+                                                    <p><span className="font-medium">Logo:</span> {seller.qrLogo ? "Uploaded" : "None"}</p>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 )}
