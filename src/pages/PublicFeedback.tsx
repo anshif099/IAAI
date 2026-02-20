@@ -384,9 +384,13 @@ const PublicFeedback = () => {
 
             // Fallback: Smart suggestions based on name/URL category
             const searchString = `${client?.name} ${client?.reviewUrl}`.toLowerCase();
-            const isRestaurant = ["restaurant", "cafe", "bistro", "zomato", "swiggy", "food", "dining", "eatery"].some(keyword => searchString.includes(keyword));
 
-            if (isRestaurant) {
+            // Define regex for whole word matching to prevent false positives (e.g., 'it' in 'website')
+            const restaurantRegex = /\b(restaurant|cafe|bistro|zomato|swiggy|food|dining|eatery)\b/i;
+            const techRegex = /\b(rainhopes|tech|software|it)\b/i;
+            const mallRegex = /\b(mall|shopping|center|plaza|mart)\b/i;
+
+            if (restaurantRegex.test(searchString)) {
                 return [
                     "Amazing food and great ambiance! Will definitely be coming back.",
                     "The service was incredibly fast and the dishes were delicious.",
@@ -395,7 +399,16 @@ const PublicFeedback = () => {
                 ];
             }
 
-            if (searchString.includes("rainhopes") || searchString.includes("tech") || searchString.includes("software") || searchString.includes("it")) {
+            if (mallRegex.test(searchString)) {
+                return [
+                    "A fantastic shopping experience with a great variety of stores.",
+                    "Clean, spacious, and very well maintained. Enjoyed my visit!",
+                    "Great place for shopping and spending time with family.",
+                    "Excellent facilities and plenty of parking space."
+                ];
+            }
+
+            if (techRegex.test(searchString)) {
                 return [
                     "Exceptional IT services! The team delivered our project on time and within budget.",
                     "Highly skilled professionals and great communication. They transformed our vision into reality.",
