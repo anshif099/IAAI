@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { QRCodeSVG } from "qrcode.react";
 import { toPng, toSvg } from "html-to-image";
 import jsPDF from "jspdf";
@@ -20,6 +21,8 @@ const SellerDashboard = () => {
 
     // Clients State
     const [clients, setClients] = useState<any[]>([]);
+    const [selectedClientForDetails, setSelectedClientForDetails] = useState<any>(null);
+    const [isClientDetailsOpen, setIsClientDetailsOpen] = useState(false);
     const [newClient, setNewClient] = useState({
         name: "",
         companyName: "",
@@ -330,7 +333,17 @@ const SellerDashboard = () => {
                                             <CardDescription>/{client.slug}</CardDescription>
                                         </CardHeader>
                                         <CardContent>
-                                            <a href={client.reviewUrl} target="_blank" rel="noreferrer" className="text-sm text-blue-600 hover:underline break-all">{client.reviewUrl}</a>
+                                            <a href={client.reviewUrl} target="_blank" rel="noreferrer" className="text-sm text-blue-600 hover:underline break-all block mb-4">{client.reviewUrl}</a>
+                                            <Button
+                                                variant="outline"
+                                                className="w-full"
+                                                onClick={() => {
+                                                    setSelectedClientForDetails(client);
+                                                    setIsClientDetailsOpen(true);
+                                                }}
+                                            >
+                                                View Details
+                                            </Button>
                                         </CardContent>
                                     </Card>
                                 ))}
@@ -338,6 +351,70 @@ const SellerDashboard = () => {
                         </div>
                     </div>
                 )}
+
+                {/* Client Details Dialog */}
+                <Dialog open={isClientDetailsOpen} onOpenChange={setIsClientDetailsOpen}>
+                    <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+                        <DialogHeader>
+                            <DialogTitle>Client Details</DialogTitle>
+                            <DialogDescription>Full information for {selectedClientForDetails?.name}</DialogDescription>
+                        </DialogHeader>
+                        {selectedClientForDetails && (
+                            <div className="space-y-4">
+                                <div className="grid grid-cols-2 gap-4 text-sm">
+                                    <div className="col-span-2">
+                                        <Label className="text-muted-foreground">Client Name</Label>
+                                        <p className="font-medium text-lg">{selectedClientForDetails.name}</p>
+                                    </div>
+                                    <div className="col-span-2">
+                                        <Label className="text-muted-foreground">Company Name</Label>
+                                        <p className="font-medium text-lg">{selectedClientForDetails.companyName}</p>
+                                    </div>
+                                    <div className="col-span-2">
+                                        <Label className="text-muted-foreground">URL Slug</Label>
+                                        <p className="font-medium font-mono p-1 bg-muted rounded w-fit">{selectedClientForDetails.slug}</p>
+                                    </div>
+                                    <div className="col-span-2">
+                                        <Label className="text-muted-foreground">Review URL</Label>
+                                        <a href={selectedClientForDetails.reviewUrl} target="_blank" rel="noreferrer" className="block font-medium text-blue-600 hover:underline break-all">
+                                            {selectedClientForDetails.reviewUrl}
+                                        </a>
+                                    </div>
+                                    <div>
+                                        <Label className="text-muted-foreground">Mobile</Label>
+                                        <p className="font-medium">{selectedClientForDetails.mobile}</p>
+                                    </div>
+                                    <div>
+                                        <Label className="text-muted-foreground">Email</Label>
+                                        <p className="font-medium break-all">{selectedClientForDetails.email}</p>
+                                    </div>
+                                    <div>
+                                        <Label className="text-muted-foreground">Password</Label>
+                                        <p className="font-medium font-mono bg-muted p-1 rounded w-fit">{selectedClientForDetails.password}</p>
+                                    </div>
+                                    <div className="col-span-2">
+                                        <Label className="text-muted-foreground">Address</Label>
+                                        <p className="font-medium">{selectedClientForDetails.address}</p>
+                                    </div>
+                                    <div className="col-span-2">
+                                        <Label className="text-muted-foreground">Suggested Reviews</Label>
+                                        <div className="bg-muted p-2 rounded text-sm whitespace-pre-line">
+                                            {selectedClientForDetails.suggestedReviews && selectedClientForDetails.suggestedReviews.length > 0
+                                                ? selectedClientForDetails.suggestedReviews.join('\n')
+                                                : "No suggestions provided."}
+                                        </div>
+                                    </div>
+                                    <div className="col-span-2 text-xs text-muted-foreground pt-4 border-t">
+                                        Created: {new Date(selectedClientForDetails.createdAt).toLocaleDateString()}
+                                    </div>
+                                </div>
+                                <div className="flex justify-end pt-2">
+                                    <Button onClick={() => setIsClientDetailsOpen(false)}>Close</Button>
+                                </div>
+                            </div>
+                        )}
+                    </DialogContent>
+                </Dialog>
 
                 {activeTab === "qr" && (
                     <div className="max-w-6xl mx-auto space-y-8">
