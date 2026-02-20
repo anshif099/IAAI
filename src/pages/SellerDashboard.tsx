@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { Download, LogOut, LayoutDashboard, MessageSquare, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { db } from "@/lib/firebase";
-import { ref, onValue, push, set, query, orderByChild, equalTo } from "firebase/database";
+import { ref, onValue, push, set, query, orderByChild, equalTo, update } from "firebase/database";
 
 const SellerDashboard = () => {
     const navigate = useNavigate();
