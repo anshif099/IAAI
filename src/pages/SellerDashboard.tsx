@@ -113,8 +113,6 @@ const SellerDashboard = () => {
                     id: key
                 }));
                 setClients(clientsArray);
-                setClients(clientsArray);
-
             } else {
                 setClients([]);
             }
@@ -125,20 +123,19 @@ const SellerDashboard = () => {
 
     // Fetch Feedback
     useEffect(() => {
-        if (clients.length === 0) return;
+        if (!seller?.id) return; // Need seller id to fetch their incoming feedback
 
         const feedbackRef = ref(db, 'feedback');
         const unsubscribe = onValue(feedbackRef, (snapshot) => {
             const data = snapshot.val();
             if (data) {
-                // Filter feedback for my clients
-                const myClientSlugs = clients.map(c => c.slug);
+                // Filter feedback meant for this seller (either from client QR or their own QR)
                 const feedbackArray = Object.entries(data)
                     .map(([key, value]) => ({
                         ...(value as any),
                         id: key
                     }))
-                    .filter((item: any) => myClientSlugs.includes(item.clientSlug))
+                    .filter((item: any) => item.sellerId === seller.id)
                     .reverse();
                 setFeedback(feedbackArray);
             } else {
@@ -146,7 +143,7 @@ const SellerDashboard = () => {
             }
         });
         return () => unsubscribe();
-    }, [clients]);
+    }, [seller]);
 
     const handleLogout = () => {
         localStorage.removeItem("current_seller");

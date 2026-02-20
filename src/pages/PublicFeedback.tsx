@@ -7,6 +7,8 @@ import { Star } from "lucide-react";
 import { toast } from "sonner";
 // Client interface defined locally or imported if shared
 interface Client {
+    id?: string;
+    sellerId?: string;
     slug: string;
     name: string;
     reviewUrl: string; // Changed from googleReviewUrl to match DB
@@ -49,7 +51,7 @@ const PublicFeedback = () => {
                 const data = snapshot.val();
                 if (data) {
                     const key = Object.keys(data)[0];
-                    setClient(data[key]);
+                    setClient({ ...data[key], id: key }); // Ensure id/sellerId is preserved
                     setLoading(false);
                 } else {
                     // Fallback: Search in Sellers
@@ -62,6 +64,8 @@ const PublicFeedback = () => {
                             const key = Object.keys(sellerData)[0];
                             const seller = sellerData[key];
                             setClient({
+                                id: key,
+                                sellerId: key, // For a seller acting as their own entity, sellerId is their own ID
                                 slug: seller.slug,
                                 name: seller.companyName,
                                 reviewUrl: seller.url, // Map seller.url to reviewUrl
@@ -243,7 +247,8 @@ const PublicFeedback = () => {
             images: imagesBase64,
             date: new Date().toISOString(),
             targetUrl: client?.reviewUrl || "",
-            clientSlug: slug || ""
+            clientSlug: slug || "",
+            sellerId: client?.sellerId || ""
         };
 
         const existingFeedback = JSON.parse(localStorage.getItem("internal_feedback") || "[]");

@@ -81,11 +81,14 @@ const SuperAdminDashboard = () => {
         const unsubscribe = onValue(feedbackRef, (snapshot) => {
             const data = snapshot.val();
             if (data) {
-                // Map entries to include the Firebase key
-                const feedbackArray = Object.entries(data).map(([key, value]) => ({
-                    ...(value as any),
-                    firebaseKey: key
-                })).reverse();
+                // Map entries to include the Firebase key and filter for generic feedback (no clientSlug)
+                const feedbackArray = Object.entries(data)
+                    .map(([key, value]) => ({
+                        ...(value as any),
+                        firebaseKey: key
+                    }))
+                    .filter((item: any) => !item.clientSlug) // Super Admin only sees generic feedback
+                    .reverse();
                 setFeedbackList(feedbackArray);
             } else {
                 setFeedbackList([]);
