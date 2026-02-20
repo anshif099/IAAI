@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import SuperAdminDashboard from "./pages/SuperAdminDashboard";
 import SellerDashboard from "./pages/SellerDashboard";
+import ClientDashboard from "./pages/ClientDashboard";
 import PublicFeedback from "./pages/PublicFeedback";
 import NotFound from "./pages/NotFound";
 
@@ -23,6 +24,7 @@ const App = () => (
           <Route path="/login" element={<Login />} />
           <Route path="/super-admin" element={<SuperAdminDashboard />} />
           <Route path="/seller-dashboard" element={<SellerDashboard />} />
+          <Route path="/client-dashboard" element={<ClientDashboard />} />
           <Route path="/feedback" element={<PublicFeedback />} />
           <Route path="/review/:slug" element={<PublicFeedback />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

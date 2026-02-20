@@ -42,14 +42,39 @@ const Login = () => {
 
                 if (seller.password === password) {
                     localStorage.setItem("current_seller", JSON.stringify(seller));
-                    toast.success(`Welcome back, ${seller.name}!`);
+                    toast.success(`Welcome back, ${seller.name || seller.companyName}!`);
                     navigate("/seller-dashboard");
+                    return;
                 } else {
                     toast.error("Invalid password");
+                    setIsLoading(false);
+                    return;
                 }
-            } else {
-                toast.error("User not found");
             }
+
+            // 3. Check Client Login (Firebase)
+            const clientsRef = ref(db, 'clients');
+            const clientEmailQuery = query(clientsRef, orderByChild('email'), equalTo(email));
+            const clientSnapshot = await get(clientEmailQuery);
+
+            if (clientSnapshot.exists()) {
+                const clientsData = clientSnapshot.val();
+                const clientKey = Object.keys(clientsData)[0];
+                const client = { ...clientsData[clientKey], id: clientKey };
+
+                if (client.password === password) {
+                    localStorage.setItem("current_client", JSON.stringify(client));
+                    toast.success(`Welcome back, ${client.name}!`);
+                    navigate("/client-dashboard");
+                    return;
+                } else {
+                    toast.error("Invalid password");
+                    setIsLoading(false);
+                    return;
+                }
+            }
+
+            toast.error("User not found");
         } catch (error) {
             console.error("Login error:", error);
             toast.error("Login failed due to a system error");
