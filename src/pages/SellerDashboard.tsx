@@ -51,11 +51,21 @@ const SellerDashboard = () => {
             navigate("/super-admin"); // Or login page
             return;
         }
-        setSeller(JSON.parse(storedSeller));
-        // Ensure slug exists in local state for QR generation
-        if (!JSON.parse(storedSeller).slug) {
-            const derivedSlug = JSON.parse(storedSeller).companyName.toLowerCase().replace(/\s+/g, '-');
-            setSeller(prev => ({ ...prev, slug: derivedSlug }));
+        const loadedSeller = JSON.parse(storedSeller);
+        setSeller(loadedSeller);
+
+        // Ensure slug exists in DB for QR generation and Public Review
+        if (!loadedSeller.slug) {
+            const derivedSlug = loadedSeller.companyName.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+            const updatedSeller = { ...loadedSeller, slug: derivedSlug };
+
+            // Update Local State
+            setSeller(updatedSeller);
+            localStorage.setItem("current_seller", JSON.stringify(updatedSeller));
+
+            // Update Firebase
+            const sellerRef = ref(db, `sellers/${loadedSeller.id}`);
+            update(sellerRef, { slug: derivedSlug }).catch(err => console.error("Failed to auto-save slug", err));
         }
     }, [navigate]);
 
