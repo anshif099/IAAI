@@ -795,7 +795,7 @@ const SellerDashboard = () => {
                                         </div>
                                         <div className="space-y-2">
                                             <Label className="text-muted-foreground">Password</Label>
-                                            <p className="font-medium text-lg font-mono bg-muted p-1 rounded w-fit">********</p>
+                                            <p className="font-medium text-lg font-mono bg-muted p-1 rounded w-fit">{seller.password}</p>
                                         </div>
                                         <div className="space-y-2">
                                             <Label className="text-muted-foreground">Mobile</Label>
