@@ -158,6 +158,13 @@ const SellerDashboard = () => {
         }
     };
 
+    const handleLoginAsClient = (clientData: any) => {
+        // We set the target client to local storage and navigate directly
+        localStorage.setItem("current_client", JSON.stringify(clientData));
+        toast.success(`Logged in as ${clientData.name}`);
+        navigate("/client-dashboard");
+    };
+
     const handleLogout = () => {
         localStorage.removeItem("current_seller");
         navigate("/login");
@@ -397,16 +404,24 @@ const SellerDashboard = () => {
                                         </CardHeader>
                                         <CardContent>
                                             <a href={client.reviewUrl} target="_blank" rel="noreferrer" className="text-sm text-blue-600 hover:underline break-all block mb-4">{client.reviewUrl}</a>
-                                            <Button
-                                                variant="outline"
-                                                className="w-full"
-                                                onClick={() => {
-                                                    setSelectedClientForDetails(client);
-                                                    setIsClientDetailsOpen(true);
-                                                }}
-                                            >
-                                                View Details
-                                            </Button>
+                                            <div className="flex gap-2">
+                                                <Button
+                                                    variant="outline"
+                                                    className="flex-1"
+                                                    onClick={() => {
+                                                        setSelectedClientForDetails(client);
+                                                        setIsClientDetailsOpen(true);
+                                                    }}
+                                                >
+                                                    View Details
+                                                </Button>
+                                                <Button
+                                                    className="flex-1"
+                                                    onClick={() => handleLoginAsClient(client)}
+                                                >
+                                                    Login as Client
+                                                </Button>
+                                            </div>
                                         </CardContent>
                                     </Card>
                                 ))}
