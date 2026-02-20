@@ -15,7 +15,9 @@ import { ref, onValue, push, set, query, orderByChild, equalTo } from "firebase/
 const SellerDashboard = () => {
     const navigate = useNavigate();
     const [seller, setSeller] = useState<any>(null);
-    const [activeTab, setActiveTab] = useState<"clients" | "qr" | "feedback">("clients");
+    const [activeTab, setActiveTab] = useState<"clients" | "qr" | "feedback" | "profile">("clients");
+
+    // Clients State
 
     // Clients State
     const [clients, setClients] = useState<any[]>([]);
@@ -29,6 +31,7 @@ const SellerDashboard = () => {
     // QR State
     const [selectedClientForQr, setSelectedClientForQr] = useState<string>("");
     const [qrColor, setQrColor] = useState("#000000");
+    const [qrLogo, setQrLogo] = useState<string | null>(null);
     const qrRef = useRef<HTMLDivElement>(null);
 
     // Feedback State
@@ -175,6 +178,9 @@ const SellerDashboard = () => {
                     <Button variant={activeTab === "feedback" ? "secondary" : "ghost"} className="w-full justify-start" onClick={() => setActiveTab("feedback")}>
                         <MessageSquare className="mr-2 h-4 w-4" /> Feedback
                     </Button>
+                    <Button variant={activeTab === "profile" ? "secondary" : "ghost"} className="w-full justify-start" onClick={() => setActiveTab("profile")}>
+                        <Users className="mr-2 h-4 w-4" /> Profile
+                    </Button>
                 </div>
                 <div className="mt-auto">
                     <Button variant="ghost" className="w-full justify-start text-destructive" onClick={handleLogout}>
@@ -243,16 +249,19 @@ const SellerDashboard = () => {
                 )}
 
                 {activeTab === "qr" && (
-                    <div className="max-w-4xl mx-auto space-y-8">
+                    <div className="max-w-6xl mx-auto space-y-8">
                         <div>
                             <h1 className="text-3xl font-bold">QR Generator</h1>
-                            <p className="text-muted-foreground">Generate QR codes for your clients</p>
+                            <p className="text-muted-foreground">Generate professional QR codes for your clients</p>
                         </div>
 
-                        <div className="flex flex-col md:flex-row gap-8">
-                            <Card className="flex-1">
-                                <CardHeader><CardTitle>Settings</CardTitle></CardHeader>
-                                <CardContent className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <Card className="h-fit">
+                                <CardHeader>
+                                    <CardTitle>Configuration</CardTitle>
+                                    <CardDescription>Customize your QR code</CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-6">
                                     <div className="space-y-2">
                                         <Label>Select Client</Label>
                                         <select
@@ -264,35 +273,130 @@ const SellerDashboard = () => {
                                             {clients.map(c => <option key={c.id} value={c.slug}>{c.name}</option>)}
                                         </select>
                                     </div>
+
                                     <div className="space-y-2">
                                         <Label>Color</Label>
-                                        <Input type="color" value={qrColor} onChange={e => setQrColor(e.target.value)} className="h-10 px-1" />
+                                        <div className="flex items-center gap-4">
+                                            <Input
+                                                type="color"
+                                                value={qrColor}
+                                                onChange={e => setQrColor(e.target.value)}
+                                                className="w-20 h-10 p-1 cursor-pointer"
+                                            />
+                                            <span className="text-sm text-muted-foreground font-mono">{qrColor}</span>
+                                        </div>
                                     </div>
-                                    <div className="grid grid-cols-3 gap-2 pt-4">
-                                        <Button variant="outline" size="sm" onClick={() => handleDownloadQr("png")}>PNG</Button>
-                                        <Button variant="outline" size="sm" onClick={() => handleDownloadQr("svg")}>SVG</Button>
-                                        <Button variant="outline" size="sm" onClick={() => handleDownloadQr("pdf")}>PDF</Button>
+
+                                    <div className="space-y-2">
+                                        <Label>Logo Overlay (Optional)</Label>
+                                        <div className="flex items-center gap-4">
+                                            <Input
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={(e) => {
+                                                    const file = e.target.files?.[0];
+                                                    if (file) {
+                                                        const reader = new FileReader();
+                                                        reader.onload = (ev) => {
+                                                            setQrLogo(ev.target?.result as string);
+                                                        };
+                                                        reader.readAsDataURL(file);
+                                                    }
+                                                }}
+                                            />
+                                            {qrLogo && (
+                                                <Button variant="outline" size="sm" onClick={() => setQrLogo(null)}>
+                                                    Remove
+                                                </Button>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-4 pt-4 border-t">
+                                        <Label>Download Options</Label>
+                                        <div className="grid grid-cols-3 gap-4">
+                                            <Button variant="outline" onClick={() => handleDownloadQr("png")} disabled={!selectedClientForQr}>
+                                                <Download className="mr-2 h-4 w-4" /> PNG
+                                            </Button>
+                                            <Button variant="outline" onClick={() => handleDownloadQr("svg")} disabled={!selectedClientForQr}>
+                                                <Download className="mr-2 h-4 w-4" /> SVG
+                                            </Button>
+                                            <Button variant="outline" onClick={() => handleDownloadQr("pdf")} disabled={!selectedClientForQr}>
+                                                <Download className="mr-2 h-4 w-4" /> PDF
+                                            </Button>
+                                        </div>
                                     </div>
                                 </CardContent>
                             </Card>
 
-                            <div className="flex justify-center flex-1">
+                            <div className="flex justify-center">
                                 {selectedClientForQr ? (
-                                    <div ref={qrRef} className="bg-white p-8 rounded-xl shadow-lg border text-center space-y-4" style={{ width: '300px' }}>
-                                        <p className="font-bold text-lg mb-2">Review us on Google</p>
-                                        <div className="flex justify-center">
+                                    <div
+                                        ref={qrRef}
+                                        className="bg-white rounded-3xl border-4 border-white shadow-xl overflow-hidden relative"
+                                        style={{
+                                            width: "320px",
+                                            height: "500px",
+                                            display: "flex",
+                                            flexDirection: "column",
+                                            alignItems: "center",
+                                            justifyContent: "space-between",
+                                            padding: "2rem",
+                                            background: "linear-gradient(to bottom, #ffffff, #f8f9fa)"
+                                        }}
+                                    >
+                                        {/* Google Border Effect */}
+                                        <div className="absolute inset-0 border-[6px] rounded-3xl pointer-events-none"
+                                            style={{
+                                                borderColor: "transparent",
+                                                background: "linear-gradient(white, white) padding-box, linear-gradient(to right, #4285F4, #EA4335, #FBBC05, #34A853) border-box"
+                                            }}
+                                        />
+
+                                        <div className="z-10 text-center space-y-1 mt-4">
+                                            <p className="text-xl font-bold text-gray-700">Review us on</p>
+                                            <div className="flex justify-center items-center gap-1">
+                                                <span className="text-4xl font-bold text-[#4285F4]">G</span>
+                                                <span className="text-4xl font-bold text-[#EA4335]">o</span>
+                                                <span className="text-4xl font-bold text-[#FBBC05]">o</span>
+                                                <span className="text-4xl font-bold text-[#4285F4]">g</span>
+                                                <span className="text-4xl font-bold text-[#34A853]">l</span>
+                                                <span className="text-4xl font-bold text-[#EA4335]">e</span>
+                                            </div>
+                                            <div className="flex justify-center gap-1 mt-2">
+                                                {[1, 2, 3, 4, 5].map((star) => (
+                                                    <svg key={star} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#FBBC05" className="w-8 h-8 drop-shadow-sm">
+                                                        <path fillRule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" clipRule="evenodd" />
+                                                    </svg>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        <div className="z-10 bg-white p-2 rounded-lg shadow-sm">
                                             <QRCodeSVG
                                                 value={`${window.location.origin}/review/${selectedClientForQr}`}
                                                 size={200}
                                                 fgColor={qrColor}
+                                                bgColor="#ffffff"
                                                 level="H"
+                                                imageSettings={qrLogo ? {
+                                                    src: qrLogo,
+                                                    x: undefined,
+                                                    y: undefined,
+                                                    height: 40,
+                                                    width: 40,
+                                                    excavate: true,
+                                                } : undefined}
                                             />
                                         </div>
-                                        <p className="text-sm text-gray-500 mt-2">Scan to leave a review</p>
+
+                                        <div className="z-10 text-center mb-4">
+                                            <p className="text-sm text-gray-500 font-medium">Scan to leave a review</p>
+                                        </div>
                                     </div>
                                 ) : (
-                                    <div className="flex items-center justify-center h-64 w-64 border-2 border-dashed rounded-xl text-muted-foreground">
-                                        Select a client
+                                    <div className="flex items-center justify-center h-[500px] w-[320px] border-2 border-dashed rounded-xl text-muted-foreground bg-muted/10">
+                                        Select a client to preview QR
                                     </div>
                                 )}
                             </div>
@@ -344,6 +448,56 @@ const SellerDashboard = () => {
                                 ))
                             )}
                         </div>
+                    </div>
+                )}
+                {activeTab === "profile" && (
+                    <div className="max-w-4xl mx-auto space-y-8">
+                        <div>
+                            <h1 className="text-3xl font-bold">Seller Profile</h1>
+                            <p className="text-muted-foreground">Your registered company details.</p>
+                        </div>
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Profile Information</CardTitle>
+                                <CardDescription>These details are managed by the Super Admin.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-6">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-2">
+                                        <Label className="text-muted-foreground">Company Name</Label>
+                                        <p className="font-medium text-lg">{seller.companyName}</p>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label className="text-muted-foreground">Seller Name</Label>
+                                        <p className="font-medium text-lg">{seller.name}</p>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label className="text-muted-foreground">Email</Label>
+                                        <p className="font-medium text-lg">{seller.email}</p>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label className="text-muted-foreground">Mobile</Label>
+                                        <p className="font-medium text-lg">{seller.mobile}</p>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label className="text-muted-foreground">Address</Label>
+                                        <p className="font-medium text-lg">{seller.address}</p>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label className="text-muted-foreground">Joined Date</Label>
+                                        <p className="font-medium text-lg">{new Date(seller.createdAt).toLocaleDateString()}</p>
+                                    </div>
+                                    <div className="col-span-2 space-y-2">
+                                        <Label className="text-muted-foreground">Company URL</Label>
+                                        <p className="font-medium text-lg break-all">{seller.url}</p>
+                                    </div>
+                                    <div className="col-span-2 space-y-2">
+                                        <Label className="text-muted-foreground">Seller ID</Label>
+                                        <p className="font-mono text-sm bg-muted p-2 rounded w-fit">{seller.id}</p>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
                     </div>
                 )}
             </div>
