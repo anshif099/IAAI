@@ -17,12 +17,12 @@ const SuperAdminSidebar = ({ activeTab, setActiveTab }: SuperAdminSidebarProps) 
     };
 
     return (
-        <div className="w-64 bg-card border-r h-screen p-4 flex flex-col">
-            <div className="mb-8 px-4">
+        <>
+            <div className="mb-8 px-4 shrink-0">
                 <h1 className="text-xl font-bold">Super Admin</h1>
             </div>
 
-            <div className="flex-1 space-y-2">
+            <div className="flex-1 space-y-2 overflow-y-auto">
                 <Button
                     variant={activeTab === "qr" ? "secondary" : "ghost"}
                     className="w-full justify-start"
@@ -63,13 +63,13 @@ const SuperAdminSidebar = ({ activeTab, setActiveTab }: SuperAdminSidebarProps) 
                 </Button>
             </div>
 
-            <div className="mt-auto">
+            <div className="mt-auto shrink-0 pt-4">
                 <Button variant="ghost" className="w-full justify-start text-destructive hover:text-destructive" onClick={handleLogout}>
                     <LogOut className="mr-2 h-4 w-4" />
                     Logout
                 </Button>
             </div>
-        </div>
+        </>
     );
 };
 
