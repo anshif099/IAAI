@@ -640,8 +640,8 @@ const SellerDashboard = () => {
                     {activeTab === "feedback" && (
                         <div className="max-w-4xl mx-auto space-y-8">
                             <div>
-                                <h1 className="text-3xl font-bold">Client Feedback</h1>
-                                <p className="text-muted-foreground">Negative feedback (1-3 stars) from your clients</p>
+                                <h1 className="text-3xl font-bold">Seller Feedback</h1>
+                                <p className="text-muted-foreground">Negative feedback (1-3 stars) from your customers</p>
                             </div>
 
                             <div className="space-y-4">
@@ -665,7 +665,7 @@ const SellerDashboard = () => {
                                                         </Button>
                                                     </div>
                                                 </CardTitle>
-                                                <CardDescription>Client: {item.clientSlug}</CardDescription>
+                                                <CardDescription>Seller: {item.clientSlug}</CardDescription>
                                             </CardHeader>
                                             <CardContent>
                                                 <p>{item.comment}</p>
