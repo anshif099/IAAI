@@ -267,6 +267,14 @@ const ClientDashboard = () => {
                                                         ))}
                                                     </div>
                                                 )}
+                                                <div className="mt-4 pt-4 border-t flex gap-4 text-sm">
+                                                    <div>
+                                                        <span className="font-semibold">User:</span> {item.displayName || "Anonymous"}
+                                                    </div>
+                                                    <div>
+                                                        <span className="font-semibold">Email:</span> {item.email || "No email"}
+                                                    </div>
+                                                </div>
                                             </CardContent>
                                         </Card>
                                     ))
