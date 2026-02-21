@@ -131,13 +131,15 @@ const SellerDashboard = () => {
         const unsubscribe = onValue(feedbackRef, (snapshot) => {
             const data = snapshot.val();
             if (data) {
-                // Filter feedback meant only for this seller (no `clientSlug`)
+                // Filter feedback meant only for this seller
+                // In PublicFeedback.tsx, when a Seller is evaluated directly, it sets `clientSlug` to the Seller's slug
+                // and `sellerId` to their own ID. So we must match BOTH or explicitly match their slug.
                 const feedbackArray = Object.entries(data)
                     .map(([key, value]) => ({
                         ...(value as any),
                         id: key
                     }))
-                    .filter((item: any) => item.sellerId === seller.id && !item.clientSlug)
+                    .filter((item: any) => item.sellerId === seller.id && item.clientSlug === seller.slug)
                     .reverse();
                 setFeedback(feedbackArray);
             } else {
