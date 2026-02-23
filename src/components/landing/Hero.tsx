@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 import { QrCode, Star, TrendingUp } from "lucide-react";
 import {
   BarChart,
@@ -33,8 +34,8 @@ const Hero = () => (
           effortlessly.
         </p>
         <div className="mt-8 flex flex-wrap gap-4">
-          <Button className="gradient-btn border-0 px-8 text-white hover:opacity-90" size="lg">
-            Login
+          <Button className="gradient-btn border-0 px-8 text-white hover:opacity-90" size="lg" asChild>
+            <Link to="/login">Login</Link>
           </Button>
           <Button variant="outline" size="lg" asChild>
             <a href="#features">View Features</a>
