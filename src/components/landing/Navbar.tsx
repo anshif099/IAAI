@@ -17,9 +17,9 @@ const Navbar = () => {
 
   return (
     <header className="sticky top-0 z-50 border-b border-border/60 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-      <div className="container mx-auto flex h-16 items-center justify-between px-4">
+      <div className="container mx-auto flex h-16 items-center justify-between px-4 pt-4">
         <a href="#home" className="flex items-center gap-2">
-          <img src={logo} alt="IAAI logo" className="h-9 w-auto" />
+          <img src={logo} alt="IAAI logo" className="h-28 w-auto" />
         </a>
 
         {/* Desktop nav */}
