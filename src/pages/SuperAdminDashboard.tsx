@@ -17,12 +17,13 @@ import { toast } from "sonner";
 import { Download, Trash2, Menu, LayoutDashboard } from "lucide-react";
 import SuperAdminSidebar from "@/components/SuperAdminSidebar";
 import { db } from "@/lib/firebase";
-import { ref, onValue, remove, push, set } from "firebase/database";
+import { ref, onValue, remove, push, set, update } from "firebase/database";
 import { useNavigate } from "react-router-dom";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from "recharts";
 
 const SuperAdminDashboard = () => {
-    const [activeTab, setActiveTab] = useState<"qr" | "feedback" | "sellers">("qr");
+    const [activeTab, setActiveTab] = useState<"qr" | "feedback" | "sellers" | "clients">("qr");
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const navigate = useNavigate();
     const [url, setUrl] = useState(() => localStorage.getItem("qr_url") || "https://www.google.com");
@@ -71,12 +72,28 @@ const SuperAdminDashboard = () => {
     const [isSellerDialogOpen, setIsSellerDialogOpen] = useState(false);
     const [isEditingSeller, setIsEditingSeller] = useState(false);
 
+    // Clients State
+    const [clients, setClients] = useState<any[]>([]);
+    const [selectedClient, setSelectedClient] = useState<any>(null);
+    const [isClientDialogOpen, setIsClientDialogOpen] = useState(false);
+    const [isEditingClient, setIsEditingClient] = useState(false);
+
+    // Search States
+    const [sellerSearchTerm, setSellerSearchTerm] = useState("");
+    const [clientSearchTerm, setClientSearchTerm] = useState("");
+
     // Reset edit mode when dialog closes
     useEffect(() => {
         if (!isSellerDialogOpen) {
             setIsEditingSeller(false);
         }
     }, [isSellerDialogOpen]);
+
+    useEffect(() => {
+        if (!isClientDialogOpen) {
+            setIsEditingClient(false);
+        }
+    }, [isClientDialogOpen]);
 
     useEffect(() => {
         const feedbackRef = ref(db, 'feedback');
@@ -111,13 +128,28 @@ const SuperAdminDashboard = () => {
             }
         });
 
+        const clientsRef = ref(db, 'clients');
+        const unsubscribeClients = onValue(clientsRef, (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                const clientsArray = Object.entries(data).map(([key, value]) => ({
+                    ...(value as any),
+                    id: key
+                })).reverse();
+                setClients(clientsArray);
+            } else {
+                setClients([]);
+            }
+        });
+
         return () => {
             unsubscribe();
             unsubscribeSellers();
+            unsubscribeClients();
         };
     }, [activeTab]);
 
-    const handleTabChange = (tab: "qr" | "feedback" | "sellers") => {
+    const handleTabChange = (tab: "qr" | "feedback" | "sellers" | "clients") => {
         setActiveTab(tab);
         setIsMobileMenuOpen(false);
     };
@@ -509,6 +541,42 @@ const SuperAdminDashboard = () => {
                                 <p className="text-muted-foreground">Manage sellers and access their dashboards</p>
                             </div>
 
+                            {/* Graphs Section */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Total Sellers</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="h-64">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <BarChart data={[{ name: 'Sellers', count: sellers.length }]}>
+                                                <CartesianGrid strokeDasharray="3 3" />
+                                                <XAxis dataKey="name" />
+                                                <YAxis />
+                                                <RechartsTooltip />
+                                                <Bar dataKey="count" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                                            </BarChart>
+                                        </ResponsiveContainer>
+                                    </CardContent>
+                                </Card>
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Total Clients</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="h-64">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <BarChart data={[{ name: 'Clients', count: clients.length }]}>
+                                                <CartesianGrid strokeDasharray="3 3" />
+                                                <XAxis dataKey="name" />
+                                                <YAxis />
+                                                <RechartsTooltip />
+                                                <Bar dataKey="count" fill="#10b981" radius={[4, 4, 0, 0]} />
+                                            </BarChart>
+                                        </ResponsiveContainer>
+                                    </CardContent>
+                                </Card>
+                            </div>
+
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                                 {/* Create Seller Form */}
                                 <Card className="h-fit">
@@ -589,16 +657,27 @@ const SuperAdminDashboard = () => {
                                 </Card>
 
                                 {/* Sellers List */}
-                                <Card className="lg:col-span-2">
-                                    <CardHeader>
+                                <Card className="lg:col-span-2 h-fit">
+                                    <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                                         <CardTitle>Existing Sellers</CardTitle>
+                                        <div className="w-full sm:w-64">
+                                            <Input
+                                                placeholder="Search sellers..."
+                                                value={sellerSearchTerm}
+                                                onChange={(e) => setSellerSearchTerm(e.target.value)}
+                                            />
+                                        </div>
                                     </CardHeader>
                                     <CardContent>
-                                        <div className="space-y-4">
+                                        <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
                                             {sellers.length === 0 ? (
                                                 <p className="text-muted-foreground text-center py-4">No sellers found.</p>
                                             ) : (
-                                                sellers.map((seller) => (
+                                                sellers.filter(seller =>
+                                                    seller.name?.toLowerCase().includes(sellerSearchTerm.toLowerCase()) ||
+                                                    seller.companyName?.toLowerCase().includes(sellerSearchTerm.toLowerCase()) ||
+                                                    seller.email?.toLowerCase().includes(sellerSearchTerm.toLowerCase())
+                                                ).map((seller) => (
                                                     <div key={seller.id} className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 border rounded-lg gap-4 bg-card hover:bg-accent/5 transition-colors">
                                                         <div>
                                                             <h3 className="font-semibold text-lg">{seller.companyName}</h3>
@@ -819,6 +898,170 @@ const SuperAdminDashboard = () => {
                                                     </div>
                                                     <div className="flex justify-end pt-4">
                                                         <Button onClick={() => setIsEditingSeller(true)}>Edit Details</Button>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </DialogContent>
+                            </Dialog>
+                        </div>
+                    )}
+
+                    {activeTab === "clients" && (
+                        <div className="max-w-6xl mx-auto space-y-8">
+                            <div>
+                                <h1 className="text-3xl font-bold tracking-tight">Client Management</h1>
+                                <p className="text-muted-foreground">View and manage all clients across all sellers</p>
+                            </div>
+
+                            <Card>
+                                <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                                    <CardTitle>All Clients</CardTitle>
+                                    <div className="w-full sm:w-64">
+                                        <Input
+                                            placeholder="Search clients..."
+                                            value={clientSearchTerm}
+                                            onChange={(e) => setClientSearchTerm(e.target.value)}
+                                        />
+                                    </div>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
+                                        {clients.length === 0 ? (
+                                            <p className="text-muted-foreground text-center py-4">No clients found.</p>
+                                        ) : (
+                                            clients.filter(client =>
+                                                client.name?.toLowerCase().includes(clientSearchTerm.toLowerCase()) ||
+                                                client.companyName?.toLowerCase().includes(clientSearchTerm.toLowerCase()) ||
+                                                client.email?.toLowerCase().includes(clientSearchTerm.toLowerCase())
+                                            ).map((client) => {
+                                                const sellerName = sellers.find(s => s.id === client.sellerId)?.companyName || "Unknown Seller";
+                                                return (
+                                                    <div key={client.id} className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 border rounded-lg gap-4 bg-card hover:bg-accent/5 transition-colors">
+                                                        <div>
+                                                            <h3 className="font-semibold text-lg">{client.companyName || client.name}</h3>
+                                                            <div className="text-sm text-muted-foreground space-y-1">
+                                                                <p>Name: {client.name}</p>
+                                                                <p>Email: {client.email}</p>
+                                                                <p>Seller Category: <span className="font-medium text-primary">{sellerName}</span></p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                                                            <Button variant="outline" onClick={() => {
+                                                                setSelectedClient(client);
+                                                                setIsClientDialogOpen(true);
+                                                            }}>
+                                                                Edit / View Details
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+                                                )
+                                            })
+                                        )}
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            <Dialog open={isClientDialogOpen} onOpenChange={setIsClientDialogOpen}>
+                                <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+                                    <DialogHeader>
+                                        <DialogTitle>Client Details</DialogTitle>
+                                        <DialogDescription>
+                                            {isEditingClient ? "Edit client information" : `Full information for ${selectedClient?.name}`}
+                                        </DialogDescription>
+                                    </DialogHeader>
+                                    {selectedClient && (
+                                        <div className="space-y-4">
+                                            {isEditingClient ? (
+                                                <div className="space-y-4 mt-4">
+                                                    <div className="grid grid-cols-1 gap-4">
+                                                        <div className="space-y-2">
+                                                            <Label>Client Name</Label>
+                                                            <Input value={selectedClient.name} onChange={(e) => setSelectedClient({ ...selectedClient, name: e.target.value })} />
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                            <Label>Company Name</Label>
+                                                            <Input value={selectedClient.companyName || ""} onChange={(e) => setSelectedClient({ ...selectedClient, companyName: e.target.value })} />
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                            <Label>Email</Label>
+                                                            <Input value={selectedClient.email} onChange={(e) => setSelectedClient({ ...selectedClient, email: e.target.value })} />
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                            <Label>Mobile</Label>
+                                                            <Input value={selectedClient.mobile || ""} onChange={(e) => setSelectedClient({ ...selectedClient, mobile: e.target.value })} />
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                            <Label>Password</Label>
+                                                            <Input value={selectedClient.password} onChange={(e) => setSelectedClient({ ...selectedClient, password: e.target.value })} />
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                            <Label>Address</Label>
+                                                            <Input value={selectedClient.address || ""} onChange={(e) => setSelectedClient({ ...selectedClient, address: e.target.value })} />
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                            <Label>Review URL</Label>
+                                                            <Input value={selectedClient.reviewUrl || ""} onChange={(e) => setSelectedClient({ ...selectedClient, reviewUrl: e.target.value })} />
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex justify-end gap-2 pt-4">
+                                                        <Button variant="outline" onClick={() => setIsEditingClient(false)}>Cancel</Button>
+                                                        <Button onClick={async () => {
+                                                            try {
+                                                                const { id, ...updateData } = selectedClient;
+                                                                await set(ref(db, `clients/${id}`), updateData);
+                                                                toast.success("Client updated successfully");
+                                                                setIsEditingClient(false);
+                                                            } catch (err) {
+                                                                toast.error("Failed to update client");
+                                                            }
+                                                        }}>Save Changes</Button>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="space-y-4 mt-4">
+                                                    <div className="grid grid-cols-2 gap-4 text-sm">
+                                                        <div className="col-span-2">
+                                                            <Label className="text-muted-foreground">Client Name</Label>
+                                                            <p className="font-medium text-lg">{selectedClient.name}</p>
+                                                        </div>
+                                                        <div className="col-span-2">
+                                                            <Label className="text-muted-foreground">Company Name</Label>
+                                                            <p className="font-medium text-lg">{selectedClient.companyName || "N/A"}</p>
+                                                        </div>
+                                                        <div>
+                                                            <Label className="text-muted-foreground">URL Slug</Label>
+                                                            <p className="font-medium font-mono bg-muted p-1 rounded w-fit">{selectedClient.slug}</p>
+                                                        </div>
+                                                        <div>
+                                                            <Label className="text-muted-foreground">Mobile</Label>
+                                                            <p className="font-medium">{selectedClient.mobile}</p>
+                                                        </div>
+                                                        <div className="col-span-2">
+                                                            <Label className="text-muted-foreground">Email</Label>
+                                                            <p className="font-medium break-all">{selectedClient.email}</p>
+                                                        </div>
+                                                        <div className="col-span-2">
+                                                            <Label className="text-muted-foreground">Password</Label>
+                                                            <p className="font-medium font-mono bg-muted p-1 rounded w-fit">{selectedClient.password}</p>
+                                                        </div>
+                                                        <div className="col-span-2">
+                                                            <Label className="text-muted-foreground">Review URL</Label>
+                                                            <a href={selectedClient.reviewUrl} target="_blank" rel="noreferrer" className="block font-medium text-blue-600 hover:underline break-all">
+                                                                {selectedClient.reviewUrl}
+                                                            </a>
+                                                        </div>
+                                                        <div className="col-span-2">
+                                                            <Label className="text-muted-foreground">Address</Label>
+                                                            <p className="font-medium">{selectedClient.address}</p>
+                                                        </div>
+                                                        <div className="col-span-2 pt-2 border-t text-xs text-muted-foreground">
+                                                            Created At: {new Date(selectedClient.createdAt).toLocaleDateString()}
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex justify-end pt-4">
+                                                        <Button onClick={() => setIsEditingClient(true)}>Edit Details</Button>
                                                     </div>
                                                 </div>
                                             )}
