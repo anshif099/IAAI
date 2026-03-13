@@ -3,7 +3,7 @@ import { useSearchParams, useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { Star } from "lucide-react";
+import { Star, Facebook, Instagram, Youtube } from "lucide-react";
 import { toast } from "sonner";
 // Client interface defined locally or imported if shared
 interface Client {
@@ -29,8 +29,10 @@ const PublicFeedback = () => {
     const [user, setUser] = useState<User | null>(null);
     const [authLoading, setAuthLoading] = useState(true);
 
-    // Step state: 'auth' | 'rating' | 'suggestions' | 'feedback' | 'success'
-    const [step, setStep] = useState<'auth' | 'rating' | 'suggestions' | 'feedback' | 'success'>('auth');
+    const [adminLinks, setAdminLinks] = useState<{ google?: string, facebook?: string, instagram?: string, youtube?: string } | null>(null);
+
+    // Step state: 'auth' | 'rating' | 'suggestions' | 'feedback' | 'success' | 'platform-selection'
+    const [step, setStep] = useState<'auth' | 'rating' | 'suggestions' | 'feedback' | 'success' | 'platform-selection'>('auth');
 
     // Legacy target URL support
     const targetUrlParam = searchParams.get("target");
@@ -97,6 +99,15 @@ const PublicFeedback = () => {
                 setStep('auth');
             }
         });
+
+        // Fetch global admin links
+        const linksRef = ref(db, 'adminSettings/links');
+        onValue(linksRef, (snapshot) => {
+            if (snapshot.exists()) {
+                setAdminLinks(snapshot.val());
+            }
+        });
+
         return () => unsubscribe();
     }, []);
 
@@ -151,32 +162,28 @@ const PublicFeedback = () => {
     };
 
     const handleHighRatingRedirect = async () => {
-        // We might want to save the high rating analytic even if they don't leave internal feedback
-        // But for now, just redirect.
-        const effectiveTargetUrl = client?.reviewUrl || targetUrlParam;
+        // Find links
+        const targetGoogle = client?.reviewUrl || targetUrlParam || adminLinks?.google;
+        
+        // Setup platforms
+        const platforms = [];
+        if (targetGoogle) platforms.push({ id: 'google', name: 'Google', url: targetGoogle, color: '#ffffff', icon: 'google' });
+        
+        // Add others only if it's the super admin generic request 
+        // (Or if clients could have multiple, but right now we only scale admin)
+        if (!slug && adminLinks) {
+            if (adminLinks.facebook) platforms.push({ id: 'facebook', name: 'Facebook', url: adminLinks.facebook, color: '#1877F2', icon: 'facebook' });
+            if (adminLinks.instagram) platforms.push({ id: 'instagram', name: 'Instagram', url: adminLinks.instagram, color: '#E4405F', icon: 'instagram' });
+            if (adminLinks.youtube) platforms.push({ id: 'youtube', name: 'YouTube', url: adminLinks.youtube, color: '#FF0000', icon: 'youtube' });
+        }
 
+        if (platforms.length > 1) {
+            setStep('platform-selection');
+            return;
+        }
+
+        const effectiveTargetUrl = targetGoogle;
         toast.success("Redirecting to Google Reviews...");
-
-        // Save minimal interaction record if needed (optional, keeping it simple as per request)
-        const newFeedback = {
-            id: Date.now(),
-            rating,
-            comment: "Redirected to Google", // Placeholder
-            email: user?.email || "",
-            displayName: user?.displayName || "",
-            photoURL: user?.photoURL || "",
-            uid: user?.uid || "",
-            images: [],
-            date: new Date().toISOString(),
-            targetUrl: effectiveTargetUrl || "",
-            clientSlug: slug || ""
-        };
-
-        // Save to local storage only for high ratings to avoid cluttering Firebase with empty redirects if not required
-        // Or if you want to track them:
-        // await push(ref(db, 'feedback'), newFeedback); 
-        // Current requirement says "review that review show admin feedback same as now" for LOW ratings.
-        // High ratings just redirect.
 
         setTimeout(() => {
             if (effectiveTargetUrl) {
@@ -522,6 +529,71 @@ const PublicFeedback = () => {
                     </div>
                     <h2 className="text-2xl font-normal text-gray-800">Thank you!</h2>
                     <p className="text-gray-600">Your feedback has been submitted successfully.</p>
+                </div>
+            </div>
+        );
+    }
+
+    // --- PLATFORM SELECTION STEP ---
+    if (step === 'platform-selection') {
+        const targetGoogle = client?.reviewUrl || targetUrlParam || adminLinks?.google;
+        
+        const platforms = [];
+        if (targetGoogle) platforms.push({ id: 'google', name: 'Google', url: targetGoogle, color: '#ffffff', icon: 'google' });
+        
+        if (!slug && adminLinks) {
+            if (adminLinks.facebook) platforms.push({ id: 'facebook', name: 'Facebook', url: adminLinks.facebook, color: '#1877F2', icon: 'facebook' });
+            if (adminLinks.instagram) platforms.push({ id: 'instagram', name: 'Instagram', url: adminLinks.instagram, color: '#E4405F', icon: 'instagram' });
+            if (adminLinks.youtube) platforms.push({ id: 'youtube', name: 'YouTube', url: adminLinks.youtube, color: '#FF0000', icon: 'youtube' });
+        }
+
+        const getIcon = (type: string, color: string) => {
+            if (type === 'google') {
+                return (
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-8 h-8">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                    </svg>
+                );
+            }
+            if (type === 'facebook') return <Facebook className="w-8 h-8 text-white" strokeWidth={1.5} />;
+            if (type === 'instagram') return <Instagram className="w-8 h-8 text-white" strokeWidth={1.5} />;
+            if (type === 'youtube') return <Youtube className="w-8 h-8 text-white" strokeWidth={1.5} />;
+            return null;
+        };
+
+        return (
+            <div className="min-h-screen flex flex-col items-center bg-white font-sans sm:pt-10 p-4">
+                <div className="w-full max-w-[500px] text-center space-y-8">
+                    <UserHeader />
+                    <h1 className="text-2xl font-medium text-[#202124]">Choose a platform</h1>
+                    <p className="text-gray-600">Please select a platform to leave your review.</p>
+                    
+                    <div className="grid grid-cols-2 gap-4 mt-8">
+                        {platforms.map(platform => (
+                            <a 
+                                key={platform.id}
+                                href={platform.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex flex-col items-center justify-center p-6 border rounded-xl hover:shadow-md transition-all gap-3 bg-gray-50 hover:bg-white"
+                            >
+                                <div 
+                                    className={`w-14 h-14 rounded-full flex items-center justify-center text-white ${platform.id === 'google' ? 'shadow bg-white' : 'shadow-sm'}`}
+                                    style={platform.id !== 'google' ? { backgroundColor: platform.color } : {}}
+                                >
+                                    {getIcon(platform.icon, platform.color)}
+                                </div>
+                                <span className="font-medium text-gray-700">{platform.name}</span>
+                            </a>
+                        ))}
+                    </div>
+
+                    {platforms.length === 0 && (
+                        <p className="text-red-500">No platforms configured.</p>
+                    )}
                 </div>
             </div>
         );

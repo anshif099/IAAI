@@ -27,9 +27,43 @@ const SuperAdminDashboard = () => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const navigate = useNavigate();
     const [url, setUrl] = useState(() => localStorage.getItem("qr_url") || "https://www.google.com");
+    const [links, setLinks] = useState({
+        google: "",
+        facebook: "",
+        instagram: "",
+        youtube: ""
+    });
     const [color, setColor] = useState(() => localStorage.getItem("qr_color") || "#000000");
     const [logo, setLogo] = useState<string | null>(() => localStorage.getItem("qr_logo") || null);
     const qrRef = useRef<HTMLDivElement>(null);
+
+    // Fetch and sync links with Firebase
+    useEffect(() => {
+        const linksRef = ref(db, 'adminSettings/links');
+        const unsubscribe = onValue(linksRef, (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                setLinks({
+                    google: data.google || "",
+                    facebook: data.facebook || "",
+                    instagram: data.instagram || "",
+                    youtube: data.youtube || ""
+                });
+                if (data.google) {
+                    setUrl(data.google); // Keep url in sync for legacy QR support
+                }
+            }
+        });
+        return () => unsubscribe();
+    }, []);
+
+    const updateLink = (platform: keyof typeof links, value: string) => {
+        setLinks(prev => ({ ...prev, [platform]: value }));
+        if (platform === 'google') setUrl(value);
+        
+        const linksRef = ref(db, 'adminSettings/links');
+        update(linksRef, { [platform]: value });
+    };
 
     // Persist QR State
     useEffect(() => {
@@ -304,16 +338,45 @@ const SuperAdminDashboard = () => {
                                         <CardDescription>Setup your target URL and styling</CardDescription>
                                     </CardHeader>
                                     <CardContent className="space-y-6">
-                                        <div className="space-y-2">
-                                            <Label htmlFor="url">Google Review URL</Label>
-                                            <Input
-                                                id="url"
-                                                placeholder="Paste your Google Review link here"
-                                                value={url}
-                                                onChange={(e) => setUrl(e.target.value)}
-                                            />
-                                            <p className="text-xs text-muted-foreground">
-                                                The QR code will point to our smart feedback page, which redirects 4-5 star reviews to this URL.
+                                        <div className="space-y-4">
+                                            <div className="space-y-2">
+                                                <Label htmlFor="googleUrl">Google Review URL</Label>
+                                                <Input
+                                                    id="googleUrl"
+                                                    placeholder="Paste your Google Review link here"
+                                                    value={links.google || url}
+                                                    onChange={(e) => updateLink('google', e.target.value)}
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label htmlFor="facebookUrl">Facebook URL</Label>
+                                                <Input
+                                                    id="facebookUrl"
+                                                    placeholder="Paste your Facebook page link here"
+                                                    value={links.facebook}
+                                                    onChange={(e) => updateLink('facebook', e.target.value)}
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label htmlFor="instagramUrl">Instagram URL</Label>
+                                                <Input
+                                                    id="instagramUrl"
+                                                    placeholder="Paste your Instagram profile link here"
+                                                    value={links.instagram}
+                                                    onChange={(e) => updateLink('instagram', e.target.value)}
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label htmlFor="youtubeUrl">YouTube URL</Label>
+                                                <Input
+                                                    id="youtubeUrl"
+                                                    placeholder="Paste your YouTube channel link here"
+                                                    value={links.youtube}
+                                                    onChange={(e) => updateLink('youtube', e.target.value)}
+                                                />
+                                            </div>
+                                            <p className="text-xs text-muted-foreground pt-2">
+                                                The QR code will point to our smart feedback page. Positive reviews will show options to post on these platforms.
                                             </p>
                                         </div>
 
