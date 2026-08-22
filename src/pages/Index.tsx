@@ -8,14 +8,16 @@ import WhoItsFor from "@/components/landing/WhoItsFor";
 import Footer from "@/components/landing/Footer";
 
 const Index = () => (
-  <div className="min-h-screen bg-background">
+  <div className="landing-page min-h-screen overflow-hidden bg-[#fbfaf7] text-[#17171b]">
     <Navbar />
-    <Hero />
-    <Features />
-    <HowItWorks />
-    <Pricing />
-    <AIInsights />
-    <WhoItsFor />
+    <main>
+      <Hero />
+      <HowItWorks />
+      <Features />
+      <AIInsights />
+      <WhoItsFor />
+      <Pricing />
+    </main>
     <Footer />
   </div>
 );
